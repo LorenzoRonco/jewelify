@@ -1,19 +1,39 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Routes, Route, Navigate } from "react-router";
 import Home from "./Home.jsx";
-//import API from "./API/API.mjs";
+import SetupSurvey from "./components/SetupSurvey.jsx";
+import DesignIterator from "./components/DesignIterator.jsx";
 import "./App.css"
 
-
 function App() {
+  const [surveyAnswers, setSurveyAnswers] = useState(null);
+  const [currentPage, setCurrentPage] = useState("home");
+
+  const handleSurveyComplete = (answers) => {
+    setSurveyAnswers(answers);
+    setCurrentPage("design");
+  };
+
+  const handleExitDesign = () => {
+    setSurveyAnswers(null);
+    setCurrentPage("home");
+  };
 
   return (
     <>
-      <Routes>
-        <Route path="/*" element={<Navigate to="/home" />} />
-        <Route path="/home" element={<Home />} />
-      </Routes> 
+      {currentPage === "survey" && (
+        <SetupSurvey onComplete={handleSurveyComplete} />
+      )}
+      {currentPage === "design" && surveyAnswers && (
+        <DesignIterator 
+          surveyAnswers={surveyAnswers} 
+          onExit={handleExitDesign}
+        />
+      )}
+      {currentPage === "home" && (
+        <Home onStartDesign={() => setCurrentPage("survey")} />
+      )}
     </>
   );
 }

@@ -1,0 +1,174 @@
+import React, { useRef, useEffect, useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, useGLTF } from "@react-three/drei";
+import * as THREE from "three";
+
+/**
+ * JewelModel Component
+ * Handles the 3D model with HYBRID rendering strategy:
+ * - INSTANT changes: Material, Color, Polish (Frontend only)
+ * - ASYNC changes: Geometry (Server API with loading state)
+ */
+const JewelModel = ({
+  modelPath = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
+  config,
+  onMaterialUpdate,
+}) => {
+  const groupRef = useRef();
+  const [materialStore, setMaterialStore] = useState({
+    baseColor: new THREE.Color(0xffd700), // Gold default
+    polishLevel: 1.0, // 0-1
+    metalColor: "gold",
+    stoneColor: new THREE.Color(0xffffff), // White default
+  });
+
+  // Load model
+  const { scene } = useGLTF(modelPath);
+
+  useEffect(() => {
+    if (groupRef.current && scene) {
+      groupRef.current.clear();
+      groupRef.current.add(scene.clone());
+    }
+  }, [scene]);
+
+  // INSTANT: Update material colors and properties (Frontend-only)
+  useEffect(() => {
+    if (!groupRef.current) return;
+
+    groupRef.current.traverse((mesh) => {
+      if (mesh.isMesh && mesh.material) {
+        // Handle metal material
+        if (mesh.name.includes("metal") || mesh.name.includes("band")) {
+          const material =
+            mesh.material instanceof Array ? mesh.material[0] : mesh.material;
+
+          if (material && material.isMeshStandardMaterial) {
+            // Update metal color instantly
+            if (config?.materialColor) {
+              const colorMap = {
+                gold: 0xffd700,
+                silver: 0xe8e8e8,
+                rose: 0xb76e79,
+                platinum: 0xe5e4e2,
+              };
+              material.color.setHex(
+                colorMap[config.materialColor] || 0xffd700
+              );
+            }
+
+            // Update metallic polish instantly
+            if (config?.polish !== undefined) {
+              material.roughness = 1 - config.polish; // Inverse: high polish = low roughness
+              material.metalness = 0.8 + config.polish * 0.2;
+            }
+          }
+        }
+
+        // Handle stone/gemstone material
+        if (mesh.name.includes("stone") || mesh.name.includes("gem")) {
+          const material =
+            mesh.material instanceof Array ? mesh.material[0] : mesh.material;
+
+          if (material && material.isMeshStandardMaterial) {
+            // Update stone color instantly
+            if (config?.stoneColor) {
+              const stoneColorMap = {
+                clear: 0xffffff,
+                pink: 0xffc0cb,
+                blue: 0x0000ff,
+                green: 0x00ff00,
+                red: 0xff0000,
+                yellow: 0xffff00,
+              };
+              material.color.setHex(
+                stoneColorMap[config.stoneColor] || 0xffffff
+              );
+            }
+
+            // Update stone transparency
+            if (config?.clarity !== undefined) {
+              material.transparent = true;
+              material.opacity = 0.5 + config.clarity * 0.5; // 50-100% opacity
+            }
+          }
+        }
+      }
+    });
+
+    // Store for reference
+    setMaterialStore({
+      metalColor: config?.materialColor || "gold",
+      stoneColor: config?.stoneColor || "clear",
+      polishLevel: config?.polish || 1.0,
+    });
+
+    if (onMaterialUpdate) {
+      onMaterialUpdate(materialStore);
+    }
+  }, [config?.materialColor, config?.polish, config?.stoneColor, config?.clarity, onMaterialUpdate]);
+
+  return (
+    <group ref={groupRef} position={[0, 0, 0]} rotation={[0, 0, 0]}>
+      {scene && <primitive object={scene} />}
+    </group>
+  );
+};
+
+/**
+ * ThreeCanvas Component
+ * Main 3D rendering component with orbit controls and responsive sizing
+ * Optimized for tablet touch interaction
+ */
+const ThreeCanvas = ({ config = {}, isLoading = false }) => {
+  const canvasRef = useRef();
+
+  return (
+    <div className="three-canvas-container">
+      <Canvas
+        ref={canvasRef}
+        camera={{ position: [0, 0, 3], fov: 50 }}
+        className="canvas-main"
+        gl={{ antialias: true, alpha: true }}
+      >
+        {/* Lighting setup for jewelry */}
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[5, 10, 7]} intensity={1} />
+        <directionalLight position={[-5, -10, -7]} intensity={0.5} />
+        <pointLight position={[0, 5, 0]} intensity={0.8} />
+
+        {/* Model with hybrid material logic */}
+        <JewelModel
+          modelPath={
+            config.modelPath ||
+            "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"
+          }
+          config={config}
+        />
+
+        {/* Orbit controls for touch interaction */}
+        <OrbitControls
+          autoRotate
+          autoRotateSpeed={2}
+          enableZoom={true}
+          enablePan={true}
+          enableRotate={true}
+          minDistance={1}
+          maxDistance={10}
+        />
+      </Canvas>
+
+      {/* Loading overlay for geometry changes */}
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner">
+            <div className="spinner"></div>
+            <p className="loading-text">Reshaping metal...</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ThreeCanvas;
