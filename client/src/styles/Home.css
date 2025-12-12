@@ -1,2 +1,44 @@
-/* Styles are consolidated in SetupSurvey.css for maintainability */
-/* All Home page styles are included in the main stylesheet */
+/* Home page styles */
+.home-container {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+		'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
+}
+
+.home-header h1 {
+	letter-spacing: 4px;
+}
+
+.home-hero {
+	text-align: center;
+	padding: 36px 20px;
+}
+
+.home-features {
+	display: flex;
+	gap: 20px;
+	justify-content: center;
+	margin-top: 20px;
+}
+
+.feature-card {
+	background: white;
+	border-radius: 6px;
+	padding: 18px;
+	width: 220px;
+	box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+	transition: transform 0.15s ease; 
+}
+
+.feature-card[role="button"] {
+	cursor: pointer;
+}
+
+.feature-card:hover {
+	transform: translateY(-6px);
+}
+
+.feature-icon img {
+	width: 100%;
+	max-width: 130px;
+}
+

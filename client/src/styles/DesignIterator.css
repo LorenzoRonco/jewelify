@@ -1,2 +1,18 @@
-/* Styles are consolidated in SetupSurvey.css for maintainability */
-/* All DesignIterator styles are included in the main stylesheet */
+/* Styles for DesignIterator */
+.iterator-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 20px;
+}
+
+.header-left {
+	display: flex;
+	align-items: center;
+}
+
+.model-tag {
+	margin-left: 14px;
+	color: #888;
+	font-size: 14px;
+}

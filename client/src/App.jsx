@@ -1,40 +1,36 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useState } from "react";
-import { Routes, Route, Navigate } from "react-router";
+import { Routes, Route, Navigate, useNavigate } from "react-router";
 import Home from "./Home.jsx";
 import SetupSurvey from "./components/SetupSurvey.jsx";
 import DesignIterator from "./components/DesignIterator.jsx";
+import ConceptSelectionPage from "./components/ConceptSelectionPage.jsx";
+import InspirationPage from "./components/InspirationPage.jsx";
 import "./App.css"
 
 function App() {
   const [surveyAnswers, setSurveyAnswers] = useState(null);
-  const [currentPage, setCurrentPage] = useState("home");
+  const navigate = useNavigate();
 
   const handleSurveyComplete = (answers) => {
     setSurveyAnswers(answers);
-    setCurrentPage("design");
+    navigate('/concepts', { state: { from: 'survey' } });
   };
 
   const handleExitDesign = () => {
     setSurveyAnswers(null);
-    setCurrentPage("home");
+    navigate('/');
   };
 
   return (
-    <>
-      {currentPage === "survey" && (
-        <SetupSurvey onComplete={handleSurveyComplete} />
-      )}
-      {currentPage === "design" && surveyAnswers && (
-        <DesignIterator 
-          surveyAnswers={surveyAnswers} 
-          onExit={handleExitDesign}
-        />
-      )}
-      {currentPage === "home" && (
-        <Home onStartDesign={() => setCurrentPage("survey")} />
-      )}
-    </>
+    <Routes>
+      <Route path="/" element={<Home onStartDesign={() => navigate('/survey')} />} />
+      <Route path="/survey" element={<SetupSurvey onComplete={handleSurveyComplete} />} />
+      <Route path="/concepts" element={<ConceptSelectionPage />} />
+      <Route path="/inspiration/:category" element={<InspirationPage />} />
+      <Route path="/design" element={<DesignIterator surveyAnswers={surveyAnswers} onExit={handleExitDesign}/>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

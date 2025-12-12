@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router";
 import "../styles/SetupSurvey.css";
+import ClickableTitle from "./ClickableTitle";
 import ringImg from "../../images/ring.png";
 import braceletImg from "../../images/bracelet.png";
 import necklaceImg from "../../images/necklace.png";
 import earringsImg from "../../images/earrings.png";
 
 const SetupSurvey = ({ onComplete }) => {
+  const location = useLocation();
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({
     category: null,
@@ -13,10 +16,10 @@ const SetupSurvey = ({ onComplete }) => {
   });
 
   const categoryOptions = [
-    { id: "ring", label: "Ring", img: ringImg, description: "Timeless bands" },
-    { id: "bracelet", label: "Bracelet", img: braceletImg, description: "Elegant wrists" },
-    { id: "necklace", label: "Necklace", img: necklaceImg, description: "Statement pendants" },
-    { id: "earrings", label: "Earrings", img: earringsImg, description: "Delicate drops" },
+    { id: "ring", label: "Ring", img: ringImg},
+    { id: "bracelet", label: "Bracelet", img: braceletImg},
+    { id: "necklace", label: "Necklace", img: necklaceImg},
+    { id: "earrings", label: "Earrings", img: earringsImg},
   ];
 
   // Define 10 survey questions with options (multi-select)
@@ -136,6 +139,14 @@ const SetupSurvey = ({ onComplete }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Set initial step based on navigation state (ex: coming back from concepts)
+  useEffect(() => {
+    const incomingStep = location?.state?.step;
+    if (incomingStep && [1,2].includes(incomingStep)) {
+      setStep(incomingStep);
+    }
+  }, [location?.state]);
+
 
   const handleSelectAnswer = (key, value) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
@@ -154,7 +165,7 @@ const SetupSurvey = ({ onComplete }) => {
       return;
     }
 
-    // If on step 2, we're ready to complete
+    // If on step 2, we're ready to complete -> call onComplete handler in App
     onComplete(answers);
   };
 
@@ -236,7 +247,7 @@ const SetupSurvey = ({ onComplete }) => {
         <button className="back-btn" onClick={handleBack} disabled={step === 1}>
           ← Go back
         </button>
-        <h1>JEWELIFY</h1>
+        <ClickableTitle />
       </header>
 
       <main className="survey-main">

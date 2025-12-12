@@ -1,0 +1,47 @@
+.concepts-page {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen;
+  padding: 28px;
+  color: #333;
+}
+
+.concepts-header h1 {
+  font-size: 28px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.concepts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.concept-card {
+  background: white;
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  text-align: center;
+}
+
+.concept-image-wrap img {
+  width: 100%;
+  height: auto;
+  max-height: 380px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.concept-label {
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .concepts-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}

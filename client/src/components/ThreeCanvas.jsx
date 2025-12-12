@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import * as THREE from "three";
 
 /**
@@ -9,6 +10,16 @@ import * as THREE from "three";
  * - INSTANT changes: Material, Color, Polish (Frontend only)
  * - ASYNC changes: Geometry (Server API with loading state)
  */
+const OBJModel = ({ modelPath }) => {
+  const object = useLoader(OBJLoader, modelPath);
+  return <primitive object={object.clone()} />;
+};
+
+const GLTFModel = ({ modelPath }) => {
+  const { scene } = useGLTF(modelPath);
+  return <primitive object={scene.clone()} />;
+};
+
 const JewelModel = ({
   modelPath = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
   config,
@@ -22,15 +33,11 @@ const JewelModel = ({
     stoneColor: new THREE.Color(0xffffff), // White default
   });
 
-  // Load model
-  const { scene } = useGLTF(modelPath);
+  // The model loading is handled by child components (GLTFModel/OBJModel)
 
-  useEffect(() => {
-    if (groupRef.current && scene) {
-      groupRef.current.clear();
-      groupRef.current.add(scene.clone());
-    }
-  }, [scene]);
+  // previously we added the loaded glTF scene directly to the groupRef when it changed.
+  // Now GLTF/OBJ models are rendered as children of this group, so there's no direct
+  // reference to a scene object here.
 
   // INSTANT: Update material colors and properties (Frontend-only)
   useEffect(() => {
@@ -108,9 +115,38 @@ const JewelModel = ({
     }
   }, [config?.materialColor, config?.polish, config?.stoneColor, config?.clarity, onMaterialUpdate]);
 
+  const cleanPath = (modelPath || "").split("?")[0].toLowerCase();
+  const ext = cleanPath.split(".").pop();
+  const isObj = ext === "obj";
+  const isBraceletPlaceholder = cleanPath.includes("bracelet");
+
+  // If using the placeholder Bracelet.obj, render a simple torus so the user sees a bracelet
+  if (isBraceletPlaceholder) {
+    return (
+      <group ref={groupRef} position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1.6, 1.6, 1.6]}>
+        <mesh name="band" castShadow receiveShadow position={[0, 0, 0]}>
+          <torusGeometry args={[0.7, 0.14, 32, 160]} />
+          <meshStandardMaterial
+            metalness={0.95}
+            roughness={0.12}
+            color={
+              ({ gold: 0xffd700, silver: 0xe8e8e8, rose: 0xb76e79 }[config?.materialColor] || 0xffd700)
+            }
+          />
+        </mesh>
+        <ambientLight intensity={0.25} />
+        <directionalLight position={[5, 10, 10]} intensity={0.9} />
+      </group>
+    );
+  }
+
   return (
     <group ref={groupRef} position={[0, 0, 0]} rotation={[0, 0, 0]}>
-      {scene && <primitive object={scene} />}
+      {isObj ? (
+        <OBJModel modelPath={modelPath} />
+      ) : (
+        <GLTFModel modelPath={modelPath} />
+      )}
     </group>
   );
 };

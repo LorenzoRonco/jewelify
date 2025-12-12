@@ -1,9 +1,18 @@
 import React, { useState, useCallback } from "react";
+import { useNavigate } from "react-router";
+import { useLocation } from "react-router";
 import ThreeCanvas from "./ThreeCanvas";
+import ClickableTitle from "./ClickableTitle";
 import "../styles/DesignIterator.css";
 import { updateGeometry } from "../API/geometryAPI";
 
 const DesignIterator = ({ surveyAnswers, onExit }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const from = location?.state?.from || null;
+  let incomingModelPath = location?.state?.modelPath;
+  if (!incomingModelPath) incomingModelPath = "/models/Bracelet.obj";
+  console.log("DesignIterator loaded modelPath:", incomingModelPath);
   const [config, setConfig] = useState({
     design: "geometric",
     material: "palladium",
@@ -14,6 +23,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     stoneColor: "clear",
     polish: 0.8,
     clarity: 0.9,
+    modelPath: incomingModelPath || "/models/Bracelet.obj",
   });
 
   const [history, setHistory] = useState([config]);
@@ -149,10 +159,16 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       {/* Header */}
       <header className="iterator-header">
         <div className="header-left">
-          <button className="btn-back" onClick={onExit}>
-            ← Go back
+          <button className="btn-back" onClick={() => {
+            if (from === 'concepts') navigate('/concepts');
+            else if (from === 'inspiration') navigate(-1);
+            else if (from === 'survey') navigate('/survey', { state: { step: 2 } });
+            else navigate('/concepts');
+          }}>
+            ← Back
           </button>
-          <h1>JEWELIFY</h1>
+          <ClickableTitle className="iterator-title" />
+          <div className="model-tag">Model: {config.modelPath || 'default'}</div>
         </div>
         <div className="header-right">
           {/* Undo/Redo controls */}
