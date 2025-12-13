@@ -1,18 +1,33 @@
 /* Styles for DesignIterator */
 .iterator-header {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
-	padding: 10px 20px;
+	justify-content: center;
+	padding: 1.5rem;
+	background: #fff;
+	border-bottom: 1px solid #e0e0e0;
+	position: relative;
+	min-height: 70px;
 }
 
 .header-left {
 	display: flex;
 	align-items: center;
+	position: absolute;
+	left: 1.5rem;
+	gap: 1rem;
 }
 
 .model-tag {
 	margin-left: 14px;
 	color: #888;
 	font-size: 14px;
-}
+	}
+
+.header-right {
+	position: absolute;
+	right: 1.5rem;
+	display: flex;
+	gap: 1rem;
+	align-items: center;
+	}

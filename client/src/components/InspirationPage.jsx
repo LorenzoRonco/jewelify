@@ -60,8 +60,8 @@ const InspirationPage = () => {
 
   return (
     <div className="inspiration-page">
-      <header className="inspiration-header">
-        <button className="btn-back-small" onClick={handleBack}>
+      <header className="inspiration-header survey-header">
+        <button className="back-btn btn-back-small" onClick={handleBack}>
           ← Back
         </button>
         <ClickableTitle />

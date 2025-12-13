@@ -28,8 +28,8 @@ const ClickableTitle = ({ className }) => {
   };
 
   return (
-    <div className={className ? className : "clickable-title"}>
-      <h1 onClick={handleClick} onKeyDown={handleKeyDown} className="clickable-title-text" role="button" tabIndex={0}>JEWELIFY</h1>
+    <div className={`clickable-title ${className ? className : ""}`}>
+      <h1 onClick={handleClick} onKeyDown={handleKeyDown} className="clickable-title-text brand-title" role="button" tabIndex={0}>JEWELIFY</h1>
 
       {showConfirm && (
         <div className="confirm-overlay">

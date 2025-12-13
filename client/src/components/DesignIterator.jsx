@@ -157,9 +157,9 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   return (
     <div className="design-iterator">
       {/* Header */}
-      <header className="iterator-header">
+      <header className="iterator-header survey-header">
         <div className="header-left">
-          <button className="btn-back" onClick={() => {
+          <button className="back-btn btn-back" onClick={() => {
             if (from === 'concepts') navigate('/concepts');
             else if (from === 'inspiration') navigate(-1);
             else if (from === 'survey') navigate('/survey', { state: { step: 2 } });
@@ -167,10 +167,10 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
           }}>
             ← Back
           </button>
-          <ClickableTitle className="iterator-title" />
-          <div className="model-tag">Model: {config.modelPath || 'default'}</div>
         </div>
+        <ClickableTitle className="iterator-title" />
         <div className="header-right">
+          <div className="model-tag">Model: {config.modelPath || 'default'}</div>
           {/* Undo/Redo controls */}
           <div className="control-group">
             <button

@@ -4,7 +4,7 @@
   color: #333;
 }
 
-.concepts-header h1 {
+.concepts-header h1:not(.clickable-title-text) {
   font-size: 28px;
   text-align: center;
   margin-bottom: 24px;

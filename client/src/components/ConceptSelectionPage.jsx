@@ -31,8 +31,8 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
 
   return (
     <div className="concepts-page">
-      <header className="concepts-header">
-        <button className="btn-back-small" onClick={handleBack}>← Back</button>
+      <header className="concepts-header survey-header">
+        <button className="back-btn btn-back-small" onClick={handleBack}>← Back</button>
         <ClickableTitle />
       </header>
 
