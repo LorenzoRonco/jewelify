@@ -31,3 +31,16 @@
 	gap: 1rem;
 	align-items: center;
 	}
+
+.design-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.model-tag {
+  margin-left: 14px;
+  color: #888;
+  font-size: 14px;
+}
+

@@ -2,6 +2,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { useState } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router";
 import Home from "./Home.jsx";
+import { HeaderProvider } from "./components/HeaderContext";
+import Navbar from "./components/Navbar";
 import SetupSurvey from "./components/SetupSurvey.jsx";
 import DesignIterator from "./components/DesignIterator.jsx";
 import ConceptSelectionPage from "./components/ConceptSelectionPage.jsx";
@@ -23,14 +25,17 @@ function App() {
   };
 
   return (
-    <Routes>
-      <Route path="/" element={<Home onStartDesign={() => navigate('/survey')} />} />
-      <Route path="/survey" element={<SetupSurvey onComplete={handleSurveyComplete} />} />
-      <Route path="/concepts" element={<ConceptSelectionPage />} />
-      <Route path="/inspiration/:category" element={<InspirationPage />} />
-      <Route path="/design" element={<DesignIterator surveyAnswers={surveyAnswers} onExit={handleExitDesign}/>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <HeaderProvider>
+      <Navbar/>
+      <Routes>
+        <Route path="/" element={<Home onStartDesign={() => navigate('/survey')} />} />
+        <Route path="/survey" element={<SetupSurvey onComplete={handleSurveyComplete} />} />
+        <Route path="/concepts" element={<ConceptSelectionPage />} />
+        <Route path="/inspiration/:category" element={<InspirationPage />} />
+        <Route path="/design" element={<DesignIterator surveyAnswers={surveyAnswers} onExit={handleExitDesign}/>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </HeaderProvider>
   );
 }
 

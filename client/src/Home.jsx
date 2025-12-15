@@ -6,14 +6,13 @@ import earringsImg from "../images/earrings.png";
 import necklaceImg from "../images/necklace.png";
 import ringImg from "../images/ring.png";
 import braceletImg from "../images/bracelet.png";
+import Navbar from "./components/Navbar";
 
 function Home({ onStartDesign }) {
   const navigate = useNavigate();
   return (
+    <>
     <div className="home-container">
-      <header className="home-header">
-        <ClickableTitle />
-      </header>
       <main className="home-main">
         <section className="home-hero">
           <h2>Design YOUR jewelry</h2>
@@ -53,6 +52,7 @@ function Home({ onStartDesign }) {
         <p>&copy; 2025 Jewelify - Premium Custom Jewelry Design</p>
       </footer>
     </div>
+    </>
   );
 }
 

@@ -6,8 +6,8 @@ We conducted a heuristic evaluation and identified several key issues blocking a
 
 ### Non-Heuristic Issues
 
-- **Data Privacy:** Critical breach found on the History page. Users can currently see and modify *other* users' projects.
-- **Expectation Mismatch:** The workflow is backward; users generate a concept *before* setting constraints, leading to frustration when the filter screen appears later.
+- **Data Privacy:** Critical breach found on the History page. Users can currently see and modify _other_ users' projects.
+- **Expectation Mismatch:** The workflow is backward; users generate a concept _before_ setting constraints, leading to frustration when the filter screen appears later.
 
 ### H1: Visibility of System Status
 
@@ -23,6 +23,7 @@ We conducted a heuristic evaluation and identified several key issues blocking a
 - **Click Targets:** Selecting a design requires clicking a tiny button rather than the image itself.
 
 ### H3: User Control and Freedom
+
 - **Trap Doors:**
   - "Confirm Order" triggers an immediate purchase without a summary or confirmation dialog.
   - No "Undo" exists after confirming a design choice.
@@ -62,7 +63,7 @@ We conducted a heuristic evaluation and identified several key issues blocking a
 
 ### H9 & H10: Help and Documentation
 
-- **Silent Errors:** When materials clash, the system blocks the action without explaining *why*.
+- **Silent Errors:** When materials clash, the system blocks the action without explaining _why_.
 - **Hidden Features:** Users must guess that designs can be customized; parameters are hidden inside menus rather than visible.
 
 ---
@@ -72,9 +73,10 @@ We conducted a heuristic evaluation and identified several key issues blocking a
 **Chosen Approach:** `Prototype #1 (Tablet)`
 
 We chose the tablet prototype over the desktop version because it offers a more natural flow for jewelry design.
-* **Context:** A tablet is a better collaborative tool for a jeweler to hand to a client than a desktop computer.
-* **Interaction:** The touch-optimized interface supports the visual, tactile nature of customizing a physical object better than mouse clicks.
-* **Flow:** The iteration process on the tablet version was simply clearer.
+
+- **Context:** A tablet is a better collaborative tool for a jeweler to hand to a client than a desktop computer.
+- **Interaction:** The touch-optimized interface supports the visual, tactile nature of customizing a physical object better than mouse clicks.
+- **Flow:** The iteration process on the tablet version was simply clearer.
 
 **Feature Migration:**
 To ensure we don't lose functionality, we are moving the **"Estimated Crafting Time"** feature from Prototype #2 to our selected design. It will appear as a label near the price during iteration to manage user expectations.
@@ -83,8 +85,8 @@ To ensure we don't lose functionality, we are moving the **"Estimated Crafting T
 
 ## 3. Interactive Prototype Links
 
-* **Screen 1:** [Setup Form](https://www.figma.com/proto/AOCcgcaIzZa4F4T6kotB1g/HCI-mid-fi?node-id=8-4&p=f&t=U9BXY4mtqSvoDDCE-1&scaling=scale-down&content-scaling=fixed&page-id=8%3A3&starting-point-node-id=8%3A4)
-* **Screen 2:** [Design iterator](https://www.figma.com/proto/AOCcgcaIzZa4F4T6kotB1g/HCI-mid-fi?node-id=88-300&p=f&t=yXn8oeU3mKuVw3CO-1&scaling=scale-down&content-scaling=fixed&page-id=78%3A90&starting-point-node-id=88%3A300)
+- **Screen 1:** [Setup Form](https://www.figma.com/proto/AOCcgcaIzZa4F4T6kotB1g/HCI-mid-fi?node-id=8-4&p=f&t=U9BXY4mtqSvoDDCE-1&scaling=scale-down&content-scaling=fixed&page-id=8%3A3&starting-point-node-id=8%3A4)
+- **Screen 2:** [Design iterator](https://www.figma.com/proto/AOCcgcaIzZa4F4T6kotB1g/HCI-mid-fi?node-id=88-300&p=f&t=yXn8oeU3mKuVw3CO-1&scaling=scale-down&content-scaling=fixed&page-id=78%3A90&starting-point-node-id=88%3A300)
 
 ---
 
@@ -93,16 +95,19 @@ To ensure we don't lose functionality, we are moving the **"Estimated Crafting T
 **Goal:** Transform our paper concepts into a responsive, interactive prototype that solves the major friction points identified above. We are prioritizing User Control and System Feedback.
 
 ### High Priority (Must-Haves)
-* **Safety Net for Orders (H3):** We will implement a proper Confirmation Dialog with a summary (preview, price, time) before any purchase is final.
-* **Transparent AI (H1):** Replace the static percentage loader with active status updates (e.g., "Analyzing preferences...", "Polishing design...").
-* **Escapability (H3):** Add clear "X" close buttons to all popups and an "Edit Design" button on the confirmation screen so users are never trapped.
-* **Flow Correction (Non-Heuristic):** Move the filter/constraints screen *before* generation to align user expectations.
+
+- **Safety Net for Orders (H3):** We will implement a proper Confirmation Dialog with a summary (preview, price, time) before any purchase is final.
+- **Transparent AI (H1):** Replace the static percentage loader with active status updates (e.g., "Analyzing preferences...", "Polishing design...").
+- **Escapability (H3):** Add clear "X" close buttons to all popups and an "Edit Design" button on the confirmation screen so users are never trapped.
+- **Flow Correction (Non-Heuristic):** Move the filter/constraints screen _before_ generation to align user expectations.
 
 ### Medium Priority (Quality of Life)
-* **Clearer Labels:** Rename ambiguous buttons (e.g., "End Project" → "Exit to Dashboard") and add descriptive tags to generated designs.
-* **Better Feedback:** Provide specific error messages when material combinations fail (e.g., "Gold is too soft for this setting").
-* **Visual Hierarchy:** Redesign the cost breakdown to be scannable (larger totals, grouped sections).
+
+- **Clearer Labels:** Rename ambiguous buttons (e.g., "End Project" → "Exit to Dashboard") and add descriptive tags to generated designs.
+- **Better Feedback:** Provide specific error messages when material combinations fail (e.g., "Gold is too soft for this setting").
+- **Visual Hierarchy:** Redesign the cost breakdown to be scannable (larger totals, grouped sections).
 
 ### Low Priority (Backlog)
-* **Undo/Cancel Generation:** While useful, stopping the AI mid-process is less critical than fixing the ordering flow.
-* **Breadcrumbs:** Adding navigation context (Home > Editor) will be added if time permits.
+
+- **Undo/Cancel Generation:** While useful, stopping the AI mid-process is less critical than fixing the ordering flow.
+- **Breadcrumbs:** Adding navigation context (Home > Editor) will be added if time permits.

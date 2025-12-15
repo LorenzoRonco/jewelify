@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useLocation } from "react-router";
 import ThreeCanvas from "./ThreeCanvas";
-import ClickableTitle from "./ClickableTitle";
+import { useHeader } from "./HeaderContext";
 import "../styles/DesignIterator.css";
 import { updateGeometry } from "../API/geometryAPI";
 
@@ -154,53 +154,42 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
+  const { setLeft, setRight } = useHeader();
+
+  React.useEffect(() => {
+    setLeft(
+      <div>
+        <button className="back-btn btn-back" onClick={() => {
+          if (from === 'concepts') navigate('/concepts');
+          else if (from === 'inspiration') navigate(-1);
+          else if (from === 'survey') navigate('/survey', { state: { step: 2 } });
+          else navigate('/concepts');
+        }}>
+          ← Back
+        </button>
+      </div>
+    );
+
+    return () => setLeft(null);
+  }, [from]);
+
+  React.useEffect(() => {
+    setRight(
+      <div className="design-header-right">
+        <div className="model-tag">Model: {config.modelPath || 'default'}</div>
+        <div className="control-group">
+          <button className="btn-icon" title="Undo" onClick={handleUndo} disabled={!canUndo}>↶</button>
+          <button className="btn-icon" title="Redo" onClick={handleRedo} disabled={!canRedo}>↷</button>
+          <button className="btn-icon" title="Recalculate" onClick={handleRecalculate} disabled={isLoading}>⟳</button>
+        </div>
+      </div>
+    );
+
+    return () => setRight(null);
+  }, [config.modelPath, canUndo, canRedo, isLoading]);
+
   return (
     <div className="design-iterator">
-      {/* Header */}
-      <header className="iterator-header survey-header">
-        <div className="header-left">
-          <button className="back-btn btn-back" onClick={() => {
-            if (from === 'concepts') navigate('/concepts');
-            else if (from === 'inspiration') navigate(-1);
-            else if (from === 'survey') navigate('/survey', { state: { step: 2 } });
-            else navigate('/concepts');
-          }}>
-            ← Back
-          </button>
-        </div>
-        <ClickableTitle className="iterator-title" />
-        <div className="header-right">
-          <div className="model-tag">Model: {config.modelPath || 'default'}</div>
-          {/* Undo/Redo controls */}
-          <div className="control-group">
-            <button
-              className="btn-icon"
-              title="Undo"
-              onClick={handleUndo}
-              disabled={!canUndo}
-            >
-              ↶
-            </button>
-            <button
-              className="btn-icon"
-              title="Redo"
-              onClick={handleRedo}
-              disabled={!canRedo}
-            >
-              ↷
-            </button>
-            <button
-              className="btn-icon"
-              title="Recalculate"
-              onClick={handleRecalculate}
-              disabled={isLoading}
-            >
-              ⟳
-            </button>
-          </div>
-        </div>
-      </header>
-
       <main className="iterator-main">
         {/* Left side: 3D Canvas */}
         <section className="canvas-section">

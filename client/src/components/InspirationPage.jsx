@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router";
 import "../styles/InspirationPage.css";
-import ClickableTitle from "./ClickableTitle";
+import { useHeader } from "./HeaderContext";
 import ringIcon from "../../images/ring.png";
 import braceletIcon from "../../images/bracelet.png";
 import necklaceIcon from "../../images/necklace.png";
@@ -58,15 +58,18 @@ const InspirationPage = () => {
     navigate("/design", { state: { modelPath: "/models/Bracelet.obj", from: 'inspiration' } });
   };
 
+  const { setLeft, setRight } = useHeader();
+  React.useEffect(() => {
+    setLeft(<button className="back-btn btn-back-small" onClick={handleBack}>← Back</button>);
+    setRight(null);
+    return () => {
+      setLeft(null);
+      setRight(null);
+    };
+  }, []);
+
   return (
     <div className="inspiration-page">
-      <header className="inspiration-header survey-header">
-        <button className="back-btn btn-back-small" onClick={handleBack}>
-          ← Back
-        </button>
-        <ClickableTitle />
-      </header>
-
       <main className="inspiration-main">
         <h2>{current.label} Inspiration</h2>
         <div className="inspiration-grid">

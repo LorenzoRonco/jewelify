@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router";
 import "../styles/ConceptSelectionPage.css";
-import ClickableTitle from "./ClickableTitle";
+import { useHeader } from "./HeaderContext";
 // Images are referenced directly from /images/ path; replace when ready
 
 const concepts = [
@@ -29,13 +29,19 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
     }
   };
 
+  const { setLeft, setRight } = useHeader();
+
+  React.useEffect(() => {
+    setLeft(<button className="back-btn btn-back-small" onClick={handleBack}>← Back</button>);
+    setRight(null);
+    return () => {
+      setLeft(null);
+      setRight(null);
+    };
+  }, []);
+
   return (
     <div className="concepts-page">
-      <header className="concepts-header survey-header">
-        <button className="back-btn btn-back-small" onClick={handleBack}>← Back</button>
-        <ClickableTitle />
-      </header>
-
       <main className="concepts-main">
         <h2>Take a look at each one</h2>
         <div className="concepts-grid">

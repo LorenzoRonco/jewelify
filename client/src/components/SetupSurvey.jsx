@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router";
 import "../styles/SetupSurvey.css";
-import ClickableTitle from "./ClickableTitle";
+import { useHeader } from "./HeaderContext";
 import ringImg from "../../images/ring.png";
 import braceletImg from "../../images/bracelet.png";
 import necklaceImg from "../../images/necklace.png";
@@ -241,15 +241,19 @@ const SetupSurvey = ({ onComplete }) => {
     return false;
   };
 
+  const { setLeft, setRight } = useHeader();
+
+  React.useEffect(() => {
+    setLeft(<button className="back-btn" onClick={handleBack} disabled={step === 1}>← Go back</button>);
+    setRight(null);
+    return () => {
+      setLeft(null);
+      setRight(null);
+    };
+  }, [step]);
+
   return (
     <div className="survey-container">
-      <header className="survey-header">
-        <button className="back-btn" onClick={handleBack} disabled={step === 1}>
-          ← Go back
-        </button>
-        <ClickableTitle />
-      </header>
-
       <main className="survey-main">
         {renderStep()}
       </main>
