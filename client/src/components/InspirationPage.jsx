@@ -31,9 +31,9 @@ const categories = {
 };
 
 const makeImages = (prefix) => {
-  // Build 9 image objects (imageUrl, modelPath)
+  // Build 8 image objects (imageUrl, modelPath) for a 4x2 grid
   const arr = [];
-  for (let i = 1; i <= 9; i++) {
+  for (let i = 1; i <= 8; i++) {
     const idx = String(i).padStart(2, "0");
     const imageFile = `/images/${prefix}_${idx}.png`;
     const modelFile = `/models/${prefix}_${idx}.obj`;

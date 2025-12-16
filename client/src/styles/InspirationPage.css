@@ -5,51 +5,49 @@
   color: #333;
 }
 
-.inspiration-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 8px;
+.inspiration-main {
+  text-align: center;
+  margin-top: 20px;
 }
 
 .btn-back-small {
   background: transparent;
   border: none;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 16px;
   cursor: pointer;
   color: #444;
-  padding: 8px 10px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  min-width: 56px;
+  min-height: 40px;
 }
 
-.inspiration-main {
-  text-align: center;
-  margin-top: 30px;
-}
 
 .inspiration-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  max-width: 900px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: 1200px;
   margin: 36px auto;
 }
 
 .inspiration-tile {
   background: white;
   border-radius: 6px;
-  padding: 24px;
+  padding: 0;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  display: block;
 }
 
 .inspiration-tile img {
   width: 100%;
-  height: auto;
-  max-width: 180px;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 @media (max-width: 720px) {

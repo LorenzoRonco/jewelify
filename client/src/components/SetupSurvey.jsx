@@ -204,27 +204,25 @@ const SetupSurvey = ({ onComplete }) => {
           <div className="survey-step">
             <h2>Step 2</h2>
             <p className="survey-subtitle">Tell us your preferences</p>
-            <div className="question-list">
-              {surveyQuestions.map((q) => (
-                <div key={q.id} className="question-card">
-                  <h3 className="question-title">{q.label}</h3>
-                  <div className="options-grid">
-                    {q.options.map((option) => {
-                      const selected = answers.survey[q.id] === option.id;
-                      return (
-                        <button
-                          key={option.id}
-                          className={`option-card ${selected ? "selected" : ""}`}
-                          onClick={() => selectSurveyOption(q.id, option.id)}
-                        >
-                          <div className="option-label">{option.label}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
+            {surveyQuestions.map((q) => (
+              <div key={q.id} className="question-card">
+                <h3 className="question-title">{q.label}</h3>
+                <div className="options-grid">
+                  {q.options.map((option) => {
+                    const selected = answers.survey[q.id] === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        className={`option-card ${selected ? "selected" : ""}`}
+                        onClick={() => selectSurveyOption(q.id, option.id)}
+                      >
+                        <div className="option-label">{option.label}</div>
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         );
       default:
@@ -242,6 +240,7 @@ const SetupSurvey = ({ onComplete }) => {
   };
 
   const { setLeft, setRight } = useHeader();
+  const mainRef = React.useRef(null);
 
   React.useEffect(() => {
     setLeft(<button className="back-btn" onClick={handleBack} disabled={step === 1}>← Go back</button>);
@@ -252,21 +251,26 @@ const SetupSurvey = ({ onComplete }) => {
     };
   }, [step]);
 
+  React.useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [step]);
+
   return (
     <div className="survey-container">
-      <main className="survey-main">
+      <main ref={mainRef} className={`survey-main ${step === 1 ? 'center-step' : ''}`}>
         {renderStep()}
       </main>
 
-      <footer className="survey-footer">
-        <button
-          className="btn-send"
-          onClick={handleNext}
-          disabled={!isAnswerSelected()}
-        >
-          {step === 2 ? "Start Design" : "Next Step"}
-        </button>
-      </footer>
+      <button
+        className="btn-send"
+        onClick={handleNext}
+        disabled={!isAnswerSelected()}
+        aria-label={step === 2 ? "Generate Jewel" : "Next Step"}
+      >
+        {step === 2 ? "Generate Jewel" : "Next Step"}
+      </button>
     </div>
   );
 };
