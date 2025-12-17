@@ -4,44 +4,97 @@
   color: #333;
 }
 
-.concepts-header h1:not(.clickable-title-text) {
-  font-size: 28px;
-  text-align: center;
-  margin-bottom: 24px;
+/* Hero */
+.concepts-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 3rem 2rem;
 }
 
+.concepts-hero {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  max-width: 640px;
+}
+
+.concepts-hero h2 {
+  font-size: 3.2rem;
+  font-weight: 400;
+  color: #333;
+  margin-bottom: 0.6rem;
+}
+
+.concepts-hero p {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+}
+
+/* Grid of big cards */
 .concepts-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  max-width: 980px;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 2.5rem;
+  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
+  align-items: start;
 }
 
 .concept-card {
-  background: white;
+  background: #fff;
+  padding: 3rem;
   border-radius: 8px;
-  padding: 14px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-  cursor: pointer;
   text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.09);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 520px;
 }
 
-.concept-image-wrap img {
-  width: 100%;
-  height: auto;
-  max-height: 380px;
+.concept-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+}
+
+.concept-icon img {
+  width: 22rem;
+  height: 22rem;
   object-fit: cover;
-  border-radius: 4px;
+  margin-bottom: 1.2rem;
+  border-radius: 10px;
+  background: #fafafa;
+  padding: 1rem;
 }
 
 .concept-label {
-  margin-top: 10px;
+  font-size: 1.1rem;
   font-weight: 600;
+  color: #333;
 }
 
 @media (max-width: 900px) {
   .concepts-grid {
-    grid-template-columns: repeat(1, 1fr);
+    grid-template-columns: 1fr;
+  }
+
+  .concepts-hero h2 {
+    font-size: 1.8rem;
+  }
+
+  .concept-icon img {
+    width: 16rem;
+    height: 16rem;
+  }
+
+  .concept-card {
+    min-height: auto;
+    padding: 2rem;
   }
 }

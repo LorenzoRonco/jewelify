@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router";
 import "../styles/ConceptSelectionPage.css";
+import braceletImg from "../../images/bracelet.png";
 import { useHeader } from "./HeaderContext";
 // Images are referenced directly from /images/ path; replace when ready
 
@@ -43,17 +44,21 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
   return (
     <div className="concepts-page">
       <main className="concepts-main">
-        <h2>Take a look at each one</h2>
-        <div className="concepts-grid">
+        <section className="concepts-hero">
+          <h2>Jewels created for YOU</h2>
+          <p>Choose a starting concept to begin customizing your piece.</p>
+        </section>
+
+        <section className="concepts-grid">
           {concepts.map((c) => (
             <div key={c.id} className="concept-card" onClick={() => handleSelect(c.modelPath)}>
-              <div className="concept-image-wrap">
-                <img src={c.image} alt={c.name} onError={(e) => (e.currentTarget.src = "/images/concept_placeholder.png")} />
+              <div className="concept-icon">
+                <img src={braceletImg} alt={c.name} onError={(e) => (e.currentTarget.src = "/images/bracelet.png")} />
               </div>
-              <div className="concept-label">{c.name}</div>
+              <h3 className="concept-label">{c.name}</h3>
             </div>
           ))}
-        </div>
+        </section>
       </main>
     </div>
   );
