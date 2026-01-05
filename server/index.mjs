@@ -20,10 +20,58 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+import fs from "fs";
+import path from "path";
+
 app.use("/static", express.static("public")); //for cards images
+/**
+ * GET /api/3dmodels-ring/parts
+ * Restituisce la lista dei file BAND, HEAD, STONE disponibili
+ */
+app.get("/api/3dmodels-ring/parts", (req, res) => {
+  const dir = path.join(process.cwd(), "public", "3Dmodels_ring");
+  fs.readdir(dir, (err, files) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ success: false, error: "Cannot read models directory" });
+    }
+    // Filtra per tipo
+    const band = files.filter((f) => f.startsWith("BAND_"));
+    const head = files.filter((f) => f.startsWith("HEAD_"));
+    const stone = files.filter((f) => f.startsWith("STONE_"));
+    res.json({ success: true, band, head, stone });
+  });
+});
+
+/**
+ * GET /api/3dmodels-ring/:type/:filename
+ * Serve un file 3D specifico (BAND, HEAD, STONE)
+ */
+app.get("/api/3dmodels-ring/:type/:filename", (req, res) => {
+  const { type, filename } = req.params;
+  const allowedTypes = ["BAND", "HEAD", "STONE"];
+  if (!allowedTypes.includes(type)) {
+    return res.status(400).json({ success: false, error: "Invalid type" });
+  }
+  if (!filename.startsWith(type + "_")) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Filename/type mismatch" });
+  }
+  const filePath = path.join(
+    process.cwd(),
+    "public",
+    "3Dmodels_ring",
+    filename
+  );
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ success: false, error: "File not found" });
+  }
+  res.sendFile(filePath);
+});
 // you can access a file using http://localhost:3001/static/{filename}
 // if the file is in a directory you have to specify the full path
-
 
 app.use(
   session({
@@ -37,14 +85,14 @@ app.use(
 
 /**
  * POST /api/geometry-update
- * 
+ *
  * Simulates server-side geometry changes that require mesh manipulation.
  * HYBRID STRATEGY: This endpoint is only called for:
  * - Design changes (geometric, organic, delicate, bold)
  * - Material changes (affects physical properties)
  * - Style changes (pavé, solitaire, halo, three-stone)
  * - Engraving changes (requires mesh operations)
- * 
+ *
  * Returns: Updated config with GLB model path and pricing
  * Delay: Simulates processing time (2-4 seconds)
  */
@@ -54,7 +102,7 @@ app.post("/api/geometry-update", async (req, res) => {
 
     // Simulate processing delay (2-4 seconds)
     const delay = Math.random() * 2000 + 2000;
-    
+
     // Simulate work with a promise
     await new Promise((resolve) => setTimeout(resolve, delay));
 
@@ -63,7 +111,7 @@ app.post("/api/geometry-update", async (req, res) => {
     // 1. Generate/fetch the updated 3D model
     // 2. Apply geometry transformations
     // 3. Return the path to the new GLB file
-    
+
     const priceCalculation = {
       palladium: 100,
       gold: 80,
@@ -88,7 +136,8 @@ app.post("/api/geometry-update", async (req, res) => {
 
     const basePricePerGram = priceCalculation[material] || 100;
     const weight = Math.random() * 5 + 10; // 10-15 grams simulated
-    const stylePrice = basePricePerGram * weight * (styleMultiplier[style] || 1.0);
+    const stylePrice =
+      basePricePerGram * weight * (styleMultiplier[style] || 1.0);
     const totalPrice = Math.round(
       stylePrice + (engravingCost[engraving] || 0) + 1000
     );
@@ -99,7 +148,8 @@ app.post("/api/geometry-update", async (req, res) => {
 
     res.json({
       success: true,
-      modelPath: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", // Placeholder until model generation is implemented
+      modelPath:
+        "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", // Placeholder until model generation is implemented
       design,
       material,
       style,
@@ -122,7 +172,7 @@ app.post("/api/geometry-update", async (req, res) => {
 
 /**
  * POST /api/validate-materials
- * 
+ *
  * Validates material combinations (e.g., Palladium with certain settings).
  * Returns compatible materials and settings or restrictions.
  */
@@ -170,7 +220,7 @@ app.post("/api/validate-materials", async (req, res) => {
 
 /**
  * GET /api/pricing
- * 
+ *
  * Returns a pricing breakdown for display in the UI.
  */
 app.get("/api/pricing", async (req, res) => {
@@ -197,7 +247,8 @@ app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
   console.log(`Available endpoints:`);
   console.log(`  POST /api/geometry-update - Update design geometry`);
-  console.log(`  POST /api/validate-materials - Validate material compatibility`);
+  console.log(
+    `  POST /api/validate-materials - Validate material compatibility`
+  );
   console.log(`  GET /api/pricing - Get pricing breakdown`);
 });
-

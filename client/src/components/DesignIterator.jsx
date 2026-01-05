@@ -12,14 +12,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const from = location?.state?.from || null;
   let incomingModelPath = location?.state?.modelPath;
   if (!incomingModelPath) incomingModelPath = "/models/Bracelet.obj";
-  console.log("DesignIterator loaded modelPath:", incomingModelPath);
+
   const [config, setConfig] = useState({
     design: "geometric",
     material: "palladium",
     style: "pavé",
     materialColor: "gold",
     metalFinish: "hammered",
-    engraving: "laser",
     stoneColor: "clear",
     polish: 0.8,
     clarity: 0.9,
@@ -65,7 +64,6 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
           design: "Reshaping metal...",
           material: "Processing material...",
           style: "Refining details...",
-          engraving: "Engraving precision...",
         };
         setLoadingMessage(messages[key] || `Updating ${key}...`);
 
@@ -86,6 +84,36 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     },
     [config, history, historyIndex]
   );
+  {/* Band Design */ }
+
+  // Utility: Generate estimated days and price based on config
+  function getEstimatedDays(config) {
+    // Simple logic: more polish/clarity = less days, platinum = more days, handwork = more days
+    let days = 60;
+    if (config.polish > 0.7) days -= 8;
+    if (config.clarity > 0.7) days -= 7;
+    if (config.materialColor === 'platinum') days += 5;
+    if (config.materialColor === 'rose') days += 2;
+    if (config.stoneColor !== 'clear') days += 2;
+    days -= Math.round((config.polish + config.clarity) * 5);
+    if (days < 25) days = 25;
+    if (days > 60) days = 60;
+    return `${days}-${days + 5}`;
+  }
+
+  function getEstimatedPrice(config) {
+    // Simple logic: platinum/rose = more expensive, polish/clarity = more expensive, colored stones = more expensive
+    let price = 1200;
+    if (config.materialColor === 'platinum') price += 600;
+    if (config.materialColor === 'rose') price += 200;
+    if (config.polish > 0.7) price += 150;
+    if (config.clarity > 0.7) price += 120;
+    if (config.stoneColor !== 'clear') price += 180;
+    price += Math.round((config.polish + config.clarity) * 100);
+    if (price > 2500) price = 2500;
+    if (price < 1200) price = 1200;
+    return price;
+  }
 
   // Handle config changes (route to instant or async)
   const handleConfigChange = (key, value) => {
@@ -102,6 +130,11 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     } else {
       handleGeometryUpdate(key, value);
     }
+
+    // Update estimated values after any change
+    const nextConfig = { ...config, [key]: value };
+    setEstimatedDays(getEstimatedDays(nextConfig));
+    setEstimatedPrice(getEstimatedPrice(nextConfig));
   };
 
   // Undo
@@ -193,63 +226,41 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       <main className="iterator-main">
         {/* Left side: 3D Canvas */}
         <section className="canvas-section">
-          <ThreeCanvas config={config} isLoading={isLoading} />
+          <ThreeCanvas
+            config={config}
+            isLoading={isLoading}
+          />
           <div className="design-feedback">It's the one!</div>
         </section>
 
         {/* Right side: Controls */}
         <aside className="controls-section">
-          {/* Design Type */}
+          {/* Band Design */}
           <div className="control-block">
-            <label htmlFor="design">Design</label>
+            <label htmlFor="bandDesign">Band Design</label>
             <select
-              id="design"
-              value={config.design}
-              onChange={(e) => handleConfigChange("design", e.target.value)}
+              id="bandDesign"
+              value={config.bandDesign || "Classic"}
+              onChange={e => {
+                const val = e.target.value;
+                let bandFile = "BAND_CLASSIC.glb";
+                if (val === "Knife") bandFile = "BAND_KNIFE.glb";
+                if (val === "Flat") bandFile = "BAND_FLAT.glb";
+                handleInstantUpdate("bandDesign", val);
+                handleInstantUpdate("bandPath", `http://localhost:5173/models/ring/${bandFile}`);
+              }}
               disabled={isLoading}
             >
-              <option value="geometric">Geometric</option>
-              <option value="organic">Organic</option>
-              <option value="delicate">Delicate</option>
-              <option value="bold">Bold</option>
+              <option value="Classic">Classic</option>
+              <option value="Knife">Knife</option>
+              <option value="Flat">Flat</option>
             </select>
           </div>
 
-          {/* Material */}
-          <div className="control-block">
-            <label htmlFor="material">Material</label>
-            <select
-              id="material"
-              value={config.material}
-              onChange={(e) => handleConfigChange("material", e.target.value)}
-              disabled={isLoading}
-            >
-              <option value="palladium">Palladium</option>
-              <option value="gold">Gold</option>
-              <option value="silver">Silver</option>
-              <option value="platinum">Platinum</option>
-            </select>
-          </div>
-
-          {/* Style */}
-          <div className="control-block">
-            <label htmlFor="style">Style</label>
-            <select
-              id="style"
-              value={config.style}
-              onChange={(e) => handleConfigChange("style", e.target.value)}
-              disabled={isLoading}
-            >
-              <option value="pavé">Pavé</option>
-              <option value="solitaire">Solitaire</option>
-              <option value="halo">Halo</option>
-              <option value="three-stone">Three Stone</option>
-            </select>
-          </div>
 
           {/* Material Color - INSTANT */}
           <div className="control-block">
-            <label htmlFor="materialColor">Metal Color</label>
+            <label htmlFor="materialColor">Metal</label>
             <select
               id="materialColor"
               value={config.materialColor}
@@ -277,21 +288,28 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
               }
               className="slider"
             />
-            <div className="slider-value">{(config.polish * 100).toFixed(0)}%</div>
+            <div className="slider-value">{(config.polish * 100).toFixed(0) === "0" ? "0% (matte)" : (config.polish * 100).toFixed(0) + "% (shiny)"}</div>
           </div>
 
-          {/* Metal Finish */}
+          {/* Stone Shape */}
           <div className="control-block">
-            <label htmlFor="metalFinish">Metal Finish</label>
+            <label htmlFor="stoneShape">STONE SHAPE</label>
             <select
-              id="metalFinish"
-              value={config.metalFinish}
-              onChange={(e) => handleConfigChange("metalFinish", e.target.value)}
+              id="stoneShape"
+              value={config.stoneShape || "brilliant"}
+              onChange={e => {
+                const val = e.target.value;
+                let stoneFile = "STONE_BRILLIANT.glb";
+                if (val === "diamond") stoneFile = "STONE_DIAMOND.glb";
+                if (val === "gem") stoneFile = "STONE_GEM.glb";
+                handleInstantUpdate("stoneShape", val);
+                handleInstantUpdate("stonePath", `http://localhost:5173/models/ring/${stoneFile}`);
+              }}
+              disabled={isLoading}
             >
-              <option value="polished">Polished</option>
-              <option value="hammered">Hammered</option>
-              <option value="brushed">Brushed</option>
-              <option value="satin">Satin</option>
+              <option value="brilliant">Brilliant</option>
+              <option value="diamond">Diamond</option>
+              <option value="gem">Gem</option>
             </select>
           </div>
 
@@ -329,23 +347,6 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
             <div className="slider-value">{(config.clarity * 100).toFixed(0)}%</div>
           </div>
 
-          {/* Engraving */}
-          <div className="control-block">
-            <label htmlFor="engraving">Engraving</label>
-            <select
-              id="engraving"
-              value={config.engraving}
-              onChange={(e) => handleConfigChange("engraving", e.target.value)}
-              disabled={isLoading}
-            >
-              <option value="laser">Laser</option>
-              <option value="hand">Hand</option>
-              <option value="machine">Machine</option>
-              <option value="etched">Etched</option>
-              <option value="deep">Deep</option>
-            </select>
-          </div>
-
           {/* Pricing Info */}
           <div className="pricing-block">
             <h3>Estimated time for creation</h3>
@@ -366,58 +367,30 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
           </button>
         </aside>
       </main>
-
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <button
-              className="modal-close"
-              onClick={() => setShowConfirmModal(false)}
-            >
-              ✕
-            </button>
-            <h2>Confirm Your Order</h2>
-
-            {/* Order Summary */}
-            <div className="order-summary">
-              <div className="summary-item">
-                <span>Material:</span>
-                <strong>{config.material}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Style:</span>
-                <strong>{config.style}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Metal Color:</span>
-                <strong>{config.materialColor}</strong>
-              </div>
-              <div className="summary-divider"></div>
-              <div className="summary-item summary-price">
-                <span>Total Price:</span>
-                <strong>€{estimatedPrice}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Estimated Days:</span>
-                <strong>{estimatedDays}</strong>
-              </div>
-            </div>
-
-            {/* Modal Actions */}
-            <div className="modal-actions">
+        <>
+          <div className="modal-overlay">
+            <div className="modal-content">
               <button
-                className="btn-cancel"
+                className="modal-close"
                 onClick={() => setShowConfirmModal(false)}
               >
-                Edit Design
+                ✕
               </button>
-              <button className="btn-purchase" onClick={handleExecutePurchase}>
-                Complete Purchase
-              </button>
+              <h2>Confirm Your Order</h2>
+
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={() => setShowConfirmModal(false)}>
+                  Edit Design
+                </button>
+                <button className="btn-purchase" onClick={handleExecutePurchase}>
+                  Complete Purchase
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
