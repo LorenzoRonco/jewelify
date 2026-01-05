@@ -10,20 +10,102 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const from = location?.state?.from || null;
-  let incomingModelPath = location?.state?.modelPath;
-  if (!incomingModelPath) incomingModelPath = "/models/Bracelet.obj";
 
-  const [config, setConfig] = useState({
-    design: "geometric",
-    material: "palladium",
-    style: "pavé",
-    materialColor: "gold",
-    metalFinish: "hammered",
-    stoneColor: "clear",
-    polish: 0.8,
-    clarity: 0.9,
-    modelPath: incomingModelPath || "/models/Bracelet.obj",
-  });
+  // Utility: pick random from array
+  function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // If surveyAnswers is present, generate a random config (stoneColor from survey if present)
+  function getRandomConfigFromSurvey(survey) {
+    let stoneColor = 'clear';
+    if (survey && survey.stoneColor) stoneColor = survey.stoneColor;
+    else if (survey && survey.survey && survey.survey.q2) {
+      switch (survey.survey.q2) {
+        case 'warm': stoneColor = 'red'; break;
+        case 'cool': stoneColor = 'blue'; break;
+        case 'neutral': stoneColor = 'clear'; break;
+        case 'vibrant': stoneColor = 'pink'; break;
+        default: stoneColor = pickRandom(['clear', 'pink', 'blue', 'green', 'red']);
+      }
+    }
+    // Material logic from survey (q4)
+    let material = pickRandom(['palladium', 'gold', 'silver', 'platinum', 'rose']);
+    let materialColor = pickRandom(['gold', 'silver', 'rose', 'platinum']);
+    if (survey && survey.survey && survey.survey.q4) {
+      switch (survey.survey.q4) {
+        case 'gold':
+          material = 'gold';
+          materialColor = 'gold';
+          break;
+        case 'silver':
+          material = 'silver';
+          materialColor = 'silver';
+          break;
+        case 'platinum':
+          material = 'platinum';
+          materialColor = 'platinum';
+          break;
+        case 'mixed':
+          material = pickRandom(['gold', 'silver', 'platinum', 'rose']);
+          // If mixed, keep color and material in sync if not rose
+          if (material === 'gold' || material === 'silver' || material === 'platinum') {
+            materialColor = material;
+          } else {
+            materialColor = pickRandom(['gold', 'silver', 'rose', 'platinum']);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+    return {
+      design: pickRandom(['geometric', 'organic', 'delicate', 'statement']),
+      material,
+      style: pickRandom(['pavé', 'solitaire', 'halo', 'vintage']),
+      materialColor,
+      metalFinish: pickRandom(['hammered', 'polished', 'matte']),
+      stoneColor,
+      polish: Math.round((Math.random() * 0.6 + 0.3) * 10) / 10, // 0.3-0.9
+      clarity: Math.round((Math.random() * 0.6 + 0.3) * 10) / 10, // 0.3-0.9
+      bandDesign: pickRandom(['Classic', 'Knife', 'Flat']),
+      stoneShape: pickRandom(['brilliant', 'diamond', 'gem']),
+      modelPath: "/models/ring/BAND_CLASSIC.glb",
+    };
+  }
+
+  let initialConfig;
+  if (surveyAnswers) {
+    const baseConfig = getRandomConfigFromSurvey(surveyAnswers);
+    // Set bandPath and stonePath to match bandDesign and stoneShape
+    let bandFile = "BAND_CLASSIC.glb";
+    if (baseConfig.bandDesign === "Knife") bandFile = "BAND_KNIFE.glb";
+    if (baseConfig.bandDesign === "Flat") bandFile = "BAND_FLAT.glb";
+    let stoneFile = "STONE_BRILLIANT.glb";
+    if (baseConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
+    if (baseConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
+    initialConfig = {
+      ...baseConfig,
+      bandPath: `http://localhost:5173/models/ring/${bandFile}`,
+      stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+    };
+  } else {
+    let incomingModelPath = location?.state?.modelPath;
+    if (!incomingModelPath) incomingModelPath = "/models/Bracelet.obj";
+    initialConfig = {
+      design: "geometric",
+      material: "palladium",
+      style: "pavé",
+      materialColor: "gold",
+      metalFinish: "hammered",
+      stoneColor: "clear",
+      polish: 0.8,
+      clarity: 0.9,
+      modelPath: incomingModelPath || "/models/Bracelet.obj",
+    };
+  }
+
+  const [config, setConfig] = useState(initialConfig);
 
   const [history, setHistory] = useState([config]);
   const [historyIndex, setHistoryIndex] = useState(0);
@@ -155,21 +237,32 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     }
   };
 
-  // Recalculate (refresh current design)
-  const handleRecalculate = async () => {
+  // Recalculate: randomize all config parameters
+  const handleRecalculate = () => {
     setIsLoading(true);
     setLoadingMessage("Recalculating design...");
-
-    try {
-      const result = await updateGeometry(config);
-      setEstimatedPrice(result.price || 1500);
-      setEstimatedDays(result.days || "30-35");
-    } catch (error) {
-      console.error("Recalculation failed:", error);
-    } finally {
+    setTimeout(() => {
+      const newConfig = getRandomConfigFromSurvey(surveyAnswers);
+      // Update bandPath and stonePath to match bandDesign and stoneShape
+      let bandFile = "BAND_CLASSIC.glb";
+      if (newConfig.bandDesign === "Knife") bandFile = "BAND_KNIFE.glb";
+      if (newConfig.bandDesign === "Flat") bandFile = "BAND_FLAT.glb";
+      let stoneFile = "STONE_BRILLIANT.glb";
+      if (newConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
+      if (newConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
+      const fullConfig = {
+        ...newConfig,
+        bandPath: `http://localhost:5173/models/ring/${bandFile}`,
+        stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+      };
+      setConfig(fullConfig);
+      setEstimatedDays(getEstimatedDays(fullConfig));
+      setEstimatedPrice(getEstimatedPrice(fullConfig));
+      setHistory([fullConfig]);
+      setHistoryIndex(0);
       setIsLoading(false);
       setLoadingMessage("");
-    }
+    }, 500);
   };
 
   // Confirm order - show safety confirmation modal
