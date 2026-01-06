@@ -10,24 +10,105 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const from = location?.state?.from || null;
-  let incomingModelPath = location?.state?.modelPath;
-  if (!incomingModelPath) incomingModelPath = "/models/Bracelet.obj";
-  console.log("DesignIterator loaded modelPath:", incomingModelPath);
-  const [config, setConfig] = useState({
-    design: "geometric",
-    material: "palladium",
-    style: "pavé",
-    materialColor: "gold",
-    metalFinish: "hammered",
-    engraving: "laser",
-    stoneColor: "clear",
-    polish: 0.8,
-    clarity: 0.9,
-    modelPath: incomingModelPath || "/models/Bracelet.obj",
-  });
 
-  const [history, setHistory] = useState([config]);
-  const [historyIndex, setHistoryIndex] = useState(0);
+  // Utility: pick random from array
+  function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // If surveyAnswers is present, generate a random config (stoneColor from survey if present)
+  function getRandomConfigFromSurvey(survey) {
+    let stoneColor = 'clear';
+    if (survey && survey.stoneColor) stoneColor = survey.stoneColor;
+    else if (survey && survey.survey && survey.survey.q2) {
+      switch (survey.survey.q2) {
+        case 'warm': stoneColor = 'red'; break;
+        case 'cool': stoneColor = 'blue'; break;
+        case 'neutral': stoneColor = 'clear'; break;
+        case 'vibrant': stoneColor = 'pink'; break;
+        default: stoneColor = pickRandom(['clear', 'pink', 'blue', 'green', 'red']);
+      }
+    }
+    // Material logic from survey (q4)
+    let material = pickRandom(['palladium', 'gold', 'silver', 'platinum', 'rose']);
+    let materialColor = pickRandom(['gold', 'silver', 'rose', 'platinum']);
+    if (survey && survey.survey && survey.survey.q4) {
+      switch (survey.survey.q4) {
+        case 'gold':
+          material = 'gold';
+          materialColor = 'gold';
+          break;
+        case 'silver':
+          material = 'silver';
+          materialColor = 'silver';
+          break;
+        case 'platinum':
+          material = 'platinum';
+          materialColor = 'platinum';
+          break;
+        case 'mixed':
+          material = pickRandom(['gold', 'silver', 'platinum', 'rose']);
+          // If mixed, keep color and material in sync if not rose
+          if (material === 'gold' || material === 'silver' || material === 'platinum') {
+            materialColor = material;
+          } else {
+            materialColor = pickRandom(['gold', 'silver', 'rose', 'platinum']);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+    return {
+      design: pickRandom(['geometric', 'organic', 'delicate', 'statement']),
+      material,
+      style: pickRandom(['pavé', 'solitaire', 'halo', 'vintage']),
+      materialColor,
+      metalFinish: pickRandom(['hammered', 'polished', 'matte']),
+      stoneColor,
+      polish: Math.round((Math.random() * 0.6 + 0.3) * 10) / 10, // 0.3-0.9
+      clarity: Math.round((Math.random() * 0.6 + 0.3) * 10) / 10, // 0.3-0.9
+      bandDesign: pickRandom(['Classic', 'Knife', 'Flat']),
+      stoneShape: pickRandom(['brilliant', 'diamond', 'gem']),
+      modelPath: "/models/ring/BAND_CLASSIC.glb",
+    };
+  }
+
+  let initialConfig;
+  if (surveyAnswers) {
+    const baseConfig = getRandomConfigFromSurvey(surveyAnswers);
+    // Set bandPath and stonePath to match bandDesign and stoneShape
+    let bandFile = "BAND_CLASSIC.glb";
+    if (baseConfig.bandDesign === "Knife") bandFile = "BAND_KNIFE.glb";
+    if (baseConfig.bandDesign === "Flat") bandFile = "BAND_FLAT.glb";
+    let stoneFile = "STONE_BRILLIANT.glb";
+    if (baseConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
+    if (baseConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
+    initialConfig = {
+      ...baseConfig,
+      bandPath: `http://localhost:5173/models/ring/${bandFile}`,
+      stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+    };
+  } else {
+    let incomingModelPath = location?.state?.modelPath;
+    if (!incomingModelPath) incomingModelPath = "/models/Bracelet.obj";
+    initialConfig = {
+      design: "geometric",
+      material: "palladium",
+      style: "pavé",
+      materialColor: "gold",
+      metalFinish: "hammered",
+      stoneColor: "clear",
+      polish: 0.8,
+      clarity: 0.9,
+      modelPath: incomingModelPath || "/models/Bracelet.obj",
+    };
+  }
+
+  const [config, setConfig] = useState(initialConfig);
+
+  const [historyState, setHistoryState] = useState({ history: [initialConfig], historyIndex: 0 });
+  const { history, historyIndex } = historyState;
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -36,16 +117,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   // INSTANT updates: Material properties that don't require server
   const handleInstantUpdate = useCallback((key, value) => {
-    setConfig((prev) => {
-      const updated = { ...prev, [key]: value };
-      // Update history for undo/redo
-      const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push(updated);
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-      return updated;
-    });
-  }, [history, historyIndex]);
+    const updated = { ...config, [key]: value };
+    setConfig(updated);
+    // Update history for undo/redo atomically
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(updated);
+    setHistoryState({ history: newHistory, historyIndex: newHistory.length - 1 });
+  }, [config, history, historyIndex]);
 
   // ASYNC updates: Geometry changes that require server
   const handleGeometryUpdate = useCallback(
@@ -65,7 +143,6 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
           design: "Reshaping metal...",
           material: "Processing material...",
           style: "Refining details...",
-          engraving: "Engraving precision...",
         };
         setLoadingMessage(messages[key] || `Updating ${key}...`);
 
@@ -73,8 +150,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         const updated = { ...config, [key]: value, modelPath: result.modelPath };
         const newHistory = history.slice(0, historyIndex + 1);
         newHistory.push(updated);
-        setHistory(newHistory);
-        setHistoryIndex(newHistory.length - 1);
+        setHistoryState({ history: newHistory, historyIndex: newHistory.length - 1 });
         setConfig(updated);
       } catch (error) {
         console.error("Geometry update failed:", error);
@@ -86,6 +162,36 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     },
     [config, history, historyIndex]
   );
+  {/* Band Design */ }
+
+  // Utility: Generate estimated days and price based on config
+  function getEstimatedDays(config) {
+    // Simple logic: more polish/clarity = less days, platinum = more days, handwork = more days
+    let days = 60;
+    if (config.polish > 0.7) days -= 8;
+    if (config.clarity > 0.7) days -= 7;
+    if (config.materialColor === 'platinum') days += 5;
+    if (config.materialColor === 'rose') days += 2;
+    if (config.stoneColor !== 'clear') days += 2;
+    days -= Math.round((config.polish + config.clarity) * 5);
+    if (days < 25) days = 25;
+    if (days > 60) days = 60;
+    return `${days}-${days + 5}`;
+  }
+
+  function getEstimatedPrice(config) {
+    // Simple logic: platinum/rose = more expensive, polish/clarity = more expensive, colored stones = more expensive
+    let price = 1200;
+    if (config.materialColor === 'platinum') price += 600;
+    if (config.materialColor === 'rose') price += 200;
+    if (config.polish > 0.7) price += 150;
+    if (config.clarity > 0.7) price += 120;
+    if (config.stoneColor !== 'clear') price += 180;
+    price += Math.round((config.polish + config.clarity) * 100);
+    if (price > 2500) price = 2500;
+    if (price < 1200) price = 1200;
+    return price;
+  }
 
   // Handle config changes (route to instant or async)
   const handleConfigChange = (key, value) => {
@@ -102,13 +208,18 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     } else {
       handleGeometryUpdate(key, value);
     }
+
+    // Update estimated values after any change
+    const nextConfig = { ...config, [key]: value };
+    setEstimatedDays(getEstimatedDays(nextConfig));
+    setEstimatedPrice(getEstimatedPrice(nextConfig));
   };
 
   // Undo
   const handleUndo = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
+      setHistoryState({ ...historyState, historyIndex: newIndex });
       setConfig(history[newIndex]);
     }
   };
@@ -117,26 +228,36 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const handleRedo = () => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
+      setHistoryState({ ...historyState, historyIndex: newIndex });
       setConfig(history[newIndex]);
     }
   };
 
-  // Recalculate (refresh current design)
-  const handleRecalculate = async () => {
+  // Recalculate: randomize all config parameters
+  const handleRecalculate = () => {
     setIsLoading(true);
     setLoadingMessage("Recalculating design...");
-
-    try {
-      const result = await updateGeometry(config);
-      setEstimatedPrice(result.price || 1500);
-      setEstimatedDays(result.days || "30-35");
-    } catch (error) {
-      console.error("Recalculation failed:", error);
-    } finally {
+    setTimeout(() => {
+      const newConfig = getRandomConfigFromSurvey(surveyAnswers);
+      // Update bandPath and stonePath to match bandDesign and stoneShape
+      let bandFile = "BAND_CLASSIC.glb";
+      if (newConfig.bandDesign === "Knife") bandFile = "BAND_KNIFE.glb";
+      if (newConfig.bandDesign === "Flat") bandFile = "BAND_FLAT.glb";
+      let stoneFile = "STONE_BRILLIANT.glb";
+      if (newConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
+      if (newConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
+      const fullConfig = {
+        ...newConfig,
+        bandPath: `http://localhost:5173/models/ring/${bandFile}`,
+        stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+      };
+      setConfig(fullConfig);
+      setEstimatedDays(getEstimatedDays(fullConfig));
+      setEstimatedPrice(getEstimatedPrice(fullConfig));
+      setHistoryState({ history: [fullConfig], historyIndex: 0 });
       setIsLoading(false);
       setLoadingMessage("");
-    }
+    }, 500);
   };
 
   // Confirm order - show safety confirmation modal
@@ -177,79 +298,68 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     setRight(
       <div className="design-header-right">
         <div className="model-tag">Model: {config.modelPath || 'default'}</div>
-        <div className="control-group">
-          <button className="btn-icon" title="Undo" onClick={handleUndo} disabled={!canUndo}>↶</button>
-          <button className="btn-icon" title="Redo" onClick={handleRedo} disabled={!canRedo}>↷</button>
-          <button className="btn-icon" title="Recalculate" onClick={handleRecalculate} disabled={isLoading}>⟳</button>
-        </div>
       </div>
     );
 
     return () => setRight(null);
-  }, [config.modelPath, canUndo, canRedo, isLoading]);
+  }, [config.modelPath]);
 
   return (
     <div className="design-iterator">
       <main className="iterator-main">
         {/* Left side: 3D Canvas */}
         <section className="canvas-section">
-          <ThreeCanvas config={config} isLoading={isLoading} />
+          <ThreeCanvas
+            config={config}
+            isLoading={isLoading}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onRecalculate={handleRecalculate}
+            onConfirmOrder={handleConfirmOrder}
+          />
           <div className="design-feedback">It's the one!</div>
         </section>
 
         {/* Right side: Controls */}
         <aside className="controls-section">
-          {/* Design Type */}
+          {/* Pricing Info */}
+          <div className="pricing-block">
+            <h3>Estimated time for creation</h3>
+            <p className="estimated-days">{estimatedDays} days</p>
+
+            <h3>Live quote:</h3>
+            <p className="live-price">€{estimatedPrice}</p>
+            <button className="btn-more-details">... more details</button>
+          </div>
+
+          {/* Band Design */}
           <div className="control-block">
-            <label htmlFor="design">Design</label>
+            <label htmlFor="bandDesign">Band Design</label>
             <select
-              id="design"
-              value={config.design}
-              onChange={(e) => handleConfigChange("design", e.target.value)}
+              id="bandDesign"
+              value={config.bandDesign || "Classic"}
+              onChange={e => {
+                const val = e.target.value;
+                let bandFile = "BAND_CLASSIC.glb";
+                if (val === "Knife") bandFile = "BAND_KNIFE.glb";
+                if (val === "Flat") bandFile = "BAND_FLAT.glb";
+                handleInstantUpdate("bandDesign", val);
+                handleInstantUpdate("bandPath", `http://localhost:5173/models/ring/${bandFile}`);
+              }}
               disabled={isLoading}
             >
-              <option value="geometric">Geometric</option>
-              <option value="organic">Organic</option>
-              <option value="delicate">Delicate</option>
-              <option value="bold">Bold</option>
+              <option value="Classic">Classic</option>
+              <option value="Knife">Knife</option>
+              <option value="Flat">Flat</option>
             </select>
           </div>
 
-          {/* Material */}
-          <div className="control-block">
-            <label htmlFor="material">Material</label>
-            <select
-              id="material"
-              value={config.material}
-              onChange={(e) => handleConfigChange("material", e.target.value)}
-              disabled={isLoading}
-            >
-              <option value="palladium">Palladium</option>
-              <option value="gold">Gold</option>
-              <option value="silver">Silver</option>
-              <option value="platinum">Platinum</option>
-            </select>
-          </div>
-
-          {/* Style */}
-          <div className="control-block">
-            <label htmlFor="style">Style</label>
-            <select
-              id="style"
-              value={config.style}
-              onChange={(e) => handleConfigChange("style", e.target.value)}
-              disabled={isLoading}
-            >
-              <option value="pavé">Pavé</option>
-              <option value="solitaire">Solitaire</option>
-              <option value="halo">Halo</option>
-              <option value="three-stone">Three Stone</option>
-            </select>
-          </div>
 
           {/* Material Color - INSTANT */}
           <div className="control-block">
-            <label htmlFor="materialColor">Metal Color</label>
+            <label htmlFor="materialColor">Metal</label>
             <select
               id="materialColor"
               value={config.materialColor}
@@ -277,21 +387,28 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
               }
               className="slider"
             />
-            <div className="slider-value">{(config.polish * 100).toFixed(0)}%</div>
+            <div className="slider-value">{(config.polish * 100).toFixed(0) === "0" ? "0% (matte)" : (config.polish * 100).toFixed(0) + "% (shiny)"}</div>
           </div>
 
-          {/* Metal Finish */}
+          {/* Stone Shape */}
           <div className="control-block">
-            <label htmlFor="metalFinish">Metal Finish</label>
+            <label htmlFor="stoneShape">STONE SHAPE</label>
             <select
-              id="metalFinish"
-              value={config.metalFinish}
-              onChange={(e) => handleConfigChange("metalFinish", e.target.value)}
+              id="stoneShape"
+              value={config.stoneShape || "brilliant"}
+              onChange={e => {
+                const val = e.target.value;
+                let stoneFile = "STONE_BRILLIANT.glb";
+                if (val === "diamond") stoneFile = "STONE_DIAMOND.glb";
+                if (val === "gem") stoneFile = "STONE_GEM.glb";
+                handleInstantUpdate("stoneShape", val);
+                handleInstantUpdate("stonePath", `http://localhost:5173/models/ring/${stoneFile}`);
+              }}
+              disabled={isLoading}
             >
-              <option value="polished">Polished</option>
-              <option value="hammered">Hammered</option>
-              <option value="brushed">Brushed</option>
-              <option value="satin">Satin</option>
+              <option value="brilliant">Brilliant</option>
+              <option value="diamond">Diamond</option>
+              <option value="gem">Gem</option>
             </select>
           </div>
 
@@ -328,96 +445,34 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
             />
             <div className="slider-value">{(config.clarity * 100).toFixed(0)}%</div>
           </div>
-
-          {/* Engraving */}
-          <div className="control-block">
-            <label htmlFor="engraving">Engraving</label>
-            <select
-              id="engraving"
-              value={config.engraving}
-              onChange={(e) => handleConfigChange("engraving", e.target.value)}
-              disabled={isLoading}
-            >
-              <option value="laser">Laser</option>
-              <option value="hand">Hand</option>
-              <option value="machine">Machine</option>
-              <option value="etched">Etched</option>
-              <option value="deep">Deep</option>
-            </select>
-          </div>
-
-          {/* Pricing Info */}
-          <div className="pricing-block">
-            <h3>Estimated time for creation</h3>
-            <p className="estimated-days">{estimatedDays} days</p>
-
-            <h3>Live quote:</h3>
-            <p className="live-price">€{estimatedPrice}</p>
-            <button className="btn-more-details">... more details</button>
-          </div>
-
-          {/* Confirm Order Button */}
-          <button
-            className="btn-confirm-order"
-            onClick={handleConfirmOrder}
-            disabled={isLoading}
-          >
-            Confirm Order
-          </button>
         </aside>
-      </main>
 
+
+      </main>
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <button
-              className="modal-close"
-              onClick={() => setShowConfirmModal(false)}
-            >
-              ✕
-            </button>
-            <h2>Confirm Your Order</h2>
-
-            {/* Order Summary */}
-            <div className="order-summary">
-              <div className="summary-item">
-                <span>Material:</span>
-                <strong>{config.material}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Style:</span>
-                <strong>{config.style}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Metal Color:</span>
-                <strong>{config.materialColor}</strong>
-              </div>
-              <div className="summary-divider"></div>
-              <div className="summary-item summary-price">
-                <span>Total Price:</span>
-                <strong>€{estimatedPrice}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Estimated Days:</span>
-                <strong>{estimatedDays}</strong>
-              </div>
-            </div>
-
-            {/* Modal Actions */}
-            <div className="modal-actions">
+        <>
+          <div className="modal-overlay">
+            <div className="modal-content">
               <button
-                className="btn-cancel"
+                className="modal-close"
                 onClick={() => setShowConfirmModal(false)}
               >
-                Edit Design
+                ✕
               </button>
-              <button className="btn-purchase" onClick={handleExecutePurchase}>
-                Complete Purchase
-              </button>
+              <h2>Confirm Your Order</h2>
+
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={() => setShowConfirmModal(false)}>
+                  Edit Design
+                </button>
+                <button className="btn-purchase" onClick={handleExecutePurchase}>
+                  Complete Purchase
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -16,10 +16,10 @@ const SetupSurvey = ({ onComplete }) => {
   });
 
   const categoryOptions = [
-    { id: "ring", label: "Ring", img: ringImg},
-    { id: "bracelet", label: "Bracelet", img: braceletImg},
-    { id: "necklace", label: "Necklace", img: necklaceImg},
-    { id: "earrings", label: "Earrings", img: earringsImg},
+    { id: "ring", label: "Ring", img: ringImg },
+    { id: "bracelet", label: "Bracelet", img: braceletImg, disabled: true },
+    { id: "necklace", label: "Necklace", img: necklaceImg, disabled: true },
+    { id: "earrings", label: "Earrings", img: earringsImg, disabled: true },
   ];
 
   // Define 10 survey questions with options (multi-select)
@@ -142,7 +142,7 @@ const SetupSurvey = ({ onComplete }) => {
   // Set initial step based on navigation state (ex: coming back from concepts)
   useEffect(() => {
     const incomingStep = location?.state?.step;
-    if (incomingStep && [1,2].includes(incomingStep)) {
+    if (incomingStep && [1, 2].includes(incomingStep)) {
       setStep(incomingStep);
     }
   }, [location?.state]);
@@ -159,14 +159,44 @@ const SetupSurvey = ({ onComplete }) => {
     }));
   };
 
+
+  // Utility: pick random from array
+  function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // Map survey answer to stone color
+  function getStoneColorFromFavoriteColors(fav) {
+    switch (fav) {
+      case 'warm': return 'red';
+      case 'cool': return 'blue';
+      case 'neutral': return 'clear';
+      case 'vibrant': return 'pink';
+      default: return pickRandom(['clear', 'pink', 'blue', 'green', 'red']);
+    }
+  }
+
   const handleNext = () => {
     if (step === 1) {
       setStep(2);
       return;
     }
 
-    // If on step 2, we're ready to complete -> call onComplete handler in App
-    onComplete(answers);
+    // On step 2: generate random config for DesignIterator
+    const stoneColor = getStoneColorFromFavoriteColors(answers.survey.q2);
+    const config = {
+      design: pickRandom(['geometric', 'organic', 'delicate', 'statement']),
+      material: pickRandom(['palladium', 'gold', 'silver', 'platinum', 'rose']),
+      style: pickRandom(['pavé', 'solitaire', 'halo', 'vintage']),
+      materialColor: pickRandom(['gold', 'silver', 'rose', 'platinum']),
+      metalFinish: pickRandom(['hammered', 'polished', 'matte']),
+      stoneColor,
+      polish: Math.round((Math.random() * 0.6 + 0.3) * 10) / 10, // 0.3-0.9
+      clarity: Math.round((Math.random() * 0.6 + 0.3) * 10) / 10, // 0.3-0.9
+      bandDesign: pickRandom(['Classic', 'Knife', 'Flat']),
+      stoneShape: pickRandom(['brilliant', 'diamond', 'gem']),
+    };
+    onComplete(config);
   };
 
   const handleBack = () => {
@@ -186,14 +216,29 @@ const SetupSurvey = ({ onComplete }) => {
               {categoryOptions.map((option) => (
                 <button
                   key={option.id}
-                  className={`option-card ${
-                    answers.category === option.id ? "selected" : ""
-                  }`}
-                  onClick={() => handleSelectAnswer("category", option.id)}
+                  className={`option-card ${answers.category === option.id ? "selected" : ""}`}
+                  onClick={() => !option.disabled && handleSelectAnswer("category", option.id)}
+                  disabled={option.disabled}
+                  style={option.disabled ? { opacity: 0.5, cursor: "not-allowed" } : {}}
                 >
                   <img src={option.img} alt={option.label} className="option-image" />
                   <div className="option-label">{option.label}</div>
-                  <div className="option-description">{option.description}</div>
+                  {option.disabled && (
+                    <div
+                      className="option-description"
+                      style={{
+                        color: '#3a4a6b',
+                        fontSize: '1.15em',
+                        fontWeight: 'bold',
+                        marginTop: '0.5em',
+                        letterSpacing: '0.5px',
+                        textShadow: '0 1px 4px #fff, 0 0 2px #b22222',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Coming soon
+                    </div>
+                  )}
                 </button>
               ))}
             </div>

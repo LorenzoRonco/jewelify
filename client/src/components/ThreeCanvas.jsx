@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import * as THREE from "three";
 
@@ -12,12 +12,74 @@ import * as THREE from "three";
  */
 const OBJModel = ({ modelPath }) => {
   const object = useLoader(OBJLoader, modelPath);
-  return <primitive object={object.clone()} />;
+  return <primitive object={object} scale={0.01} />;
 };
 
-const GLTFModel = ({ modelPath }) => {
+const GLTFModel = ({ modelPath, scale = 1, materialColor, config }) => {
   const { scene } = useGLTF(modelPath);
-  return <primitive object={scene.clone()} />;
+
+  // Applica colore metallo, polish e colore stone
+  useEffect(() => {
+    if (!scene) return;
+    const colorMap = {
+      gold: 0xffd700,
+      silver: 0xf5f3e7,
+      rose: 0xb76e79,
+      platinum: 0xc0e0ff,
+    };
+    const stoneColorMap = {
+      clear: 0xe0f7ff,
+      pink: 0xffc0cb,
+      blue: 0x0000ff,
+      green: 0x00ff00,
+      red: 0xff0000,
+      yellow: 0xffe066,
+    };
+    scene.traverse((child) => {
+      if (child.isMesh && child.material) {
+        const mat = Array.isArray(child.material) ? child.material[0] : child.material;
+        const childNameLower = child.name.toLowerCase();
+        const isStone = childNameLower.includes("stone") || childNameLower.includes("gem");
+
+        // METAL (solo se non è stone e materialColor è passato)
+        if (!isStone && materialColor) {
+          if (mat && mat.isMeshStandardMaterial) {
+            mat.color.setHex(colorMap[materialColor] || 0xffd700);
+            const MIN_ROUGHNESS = 0.08;
+            const MAX_ROUGHNESS = 0.6;
+            if (typeof config?.polish === 'number') {
+              mat.roughness = MIN_ROUGHNESS + (1 - config.polish) * (MAX_ROUGHNESS - MIN_ROUGHNESS);
+            }
+            mat.metalness = 1.0;
+            // Do NOT set opacity for metal
+            mat.needsUpdate = true;
+          }
+        }
+
+        // STONE (applica sempre colore stone a tutti i mesh del modello stone)
+        if (!materialColor && config?.stoneColor) {
+          // Se non c'è materialColor, questo è il modello stone: colora tutti i mesh
+          if (mat && mat.isMeshStandardMaterial) {
+            mat.color.setHex(stoneColorMap[config.stoneColor] || 0xffffff);
+            mat.roughness = 0.0;
+            mat.metalness = 0.0;
+            mat.transparent = true;
+            // Apply clarity (opacity) only to stone
+            if (typeof config?.clarity === 'number') {
+              // Set minimum opacity to 0.7 (so stone never gets too transparent)
+              mat.opacity = 0.7 + config.clarity * 0.3; // 0.7 (min) to 1.0 (max)
+            } else {
+              mat.opacity = 0.9;
+            }
+            mat.needsUpdate = true;
+          }
+        }
+      }
+    });
+  }, [scene, materialColor, config?.polish, config?.stoneColor, config?.clarity]);
+
+  // Usa direttamente primitive per renderizzare la scene
+  return <primitive object={scene} scale={scale} position={[0, -0.5, 0]} />;
 };
 
 const JewelModel = ({
@@ -41,52 +103,94 @@ const JewelModel = ({
 
   // INSTANT: Update material colors and properties (Frontend-only)
   useEffect(() => {
+
+    // Debug: log ogni volta che cambia polish
+    let foundMesh = false;
+    if (groupRef.current) {
+      groupRef.current.traverse((mesh) => {
+        if (mesh.isMesh && mesh.material) {
+          if (
+            mesh.name.toLowerCase().includes("band") ||
+            mesh.name.toLowerCase().includes("metal") ||
+            mesh.name.toLowerCase().includes("head")
+          ) {
+            foundMesh = true;
+          }
+        }
+      });
+    }
+    if (config?.polish !== undefined) {
+      if (foundMesh) {
+        console.log(`[JewelModel] Polish: ${config.polish}`);
+      } else {
+        console.log(`[JewelModel] Polish: ${config.polish} (no mesh found)`);
+      }
+    }
     if (!groupRef.current) return;
 
     groupRef.current.traverse((mesh) => {
       if (mesh.isMesh && mesh.material) {
-        // Handle metal material
-        if (mesh.name.includes("metal") || mesh.name.includes("band")) {
-          const material =
-            mesh.material instanceof Array ? mesh.material[0] : mesh.material;
-
-          if (material && material.isMeshStandardMaterial) {
-            // Update metal color instantly
+        // --- METAL MATERIAL (band, head, ecc.) ---
+        if (
+          mesh.name.toLowerCase().includes("band") ||
+          mesh.name.toLowerCase().includes("metal") ||
+          mesh.name.toLowerCase().includes("head")
+        ) {
+          let material = mesh.material instanceof Array ? mesh.material[0] : mesh.material;
+          // Se non è già MeshPhysicalMaterial, convertilo
+          if (material && !material.isMeshPhysicalMaterial && THREE.MeshPhysicalMaterial) {
+            const newMat = new THREE.MeshPhysicalMaterial();
+            newMat.copy(material);
+            mesh.material = newMat;
+            material = newMat;
+          }
+          if (material && (material.isMeshStandardMaterial || material.isMeshPhysicalMaterial)) {
+            // Colore metallo
             if (config?.materialColor) {
               const colorMap = {
                 gold: 0xffd700,
-                silver: 0xe8e8e8,
+                silver: 0xf5f3e7,
                 rose: 0xb76e79,
-                platinum: 0xe5e4e2,
+                platinum: 0xc0e0ff,
               };
-              material.color.setHex(
-                colorMap[config.materialColor] || 0xffd700
-              );
+              material.color.setHex(colorMap[config.materialColor] || 0xffd700);
             }
-
-            // Update metallic polish instantly
-            if (config?.polish !== undefined) {
-              material.roughness = 1 - config.polish; // Inverse: high polish = low roughness
-              material.metalness = 0.8 + config.polish * 0.2;
+            // Aspetto metallico ancora più realistico
+            material.metalness = 1.0;
+            // Polish: 0 (matte) -> roughness 1, 1 (mirror) -> roughness 0
+            if (typeof config?.polish === 'number') {
+              material.roughness = 1 - config.polish;
+              console.log(`[JewelModel] mesh: ${mesh.name}, polish: ${config.polish}, roughness: ${material.roughness}`);
+            } else {
+              material.roughness = 0.08;
+              console.log(`[JewelModel] mesh: ${mesh.name}, polish: default, roughness: 0.08`);
+            }
+            material.clearcoat = 1.0;
+            material.clearcoatRoughness = 0.05;
+            material.reflectivity = 1.0;
+            material.envMapIntensity = 1.5;
+            material.needsUpdate = true;
+            // Applica una envMap semplice per riflessi (se non già presente)
+            if (!material.envMap) {
+              const envMap = new THREE.TextureLoader().load("https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/cube/SwedishRoyalCastle/px.jpg");
+              material.envMap = envMap;
+              material.envMapIntensity = 1.5;
             }
           }
         }
-
-        // Handle stone/gemstone material
-        if (mesh.name.includes("stone") || mesh.name.includes("gem")) {
-          const material =
-            mesh.material instanceof Array ? mesh.material[0] : mesh.material;
-
+        // --- STONE/GEM MATERIAL ---
+        if (mesh.name.toLowerCase().includes("stone") || mesh.name.toLowerCase().includes("gem")) {
+          const material = mesh.material instanceof Array ? mesh.material[0] : mesh.material;
           if (material && material.isMeshStandardMaterial) {
             // Update stone color instantly
             if (config?.stoneColor) {
               const stoneColorMap = {
-                clear: 0xffffff,
+                clear: 0xe0f7ff,   // Clear: azzurro molto chiaro
                 pink: 0xffc0cb,
                 blue: 0x0000ff,
                 green: 0x00ff00,
                 red: 0xff0000,
-                yellow: 0xffff00,
+                yellow: 0xffe066,  // Yellow: più caldo, giallo intenso
               };
               material.color.setHex(
                 stoneColorMap[config.stoneColor] || 0xffffff
@@ -113,7 +217,7 @@ const JewelModel = ({
     if (onMaterialUpdate) {
       onMaterialUpdate(materialStore);
     }
-  }, [config?.materialColor, config?.polish, config?.stoneColor, config?.clarity, onMaterialUpdate]);
+  }, [config?.materialColor, config?.polish, config?.stoneColor, config?.clarity, onMaterialUpdate, materialStore]);
 
   const cleanPath = (modelPath || "").split("?")[0].toLowerCase();
   const ext = cleanPath.split(".").pop();
@@ -140,8 +244,9 @@ const JewelModel = ({
     );
   }
 
+  // Forza il remount del gruppo 3D quando cambia polish
   return (
-    <group ref={groupRef} position={[0, 0, 0]} rotation={[0, 0, 0]}>
+    <group ref={groupRef} position={[0, 0, 0]} rotation={[0, 0, 0]} key={`polish-${config?.polish}`}>
       {isObj ? (
         <OBJModel modelPath={modelPath} />
       ) : (
@@ -156,31 +261,232 @@ const JewelModel = ({
  * Main 3D rendering component with orbit controls and responsive sizing
  * Optimized for tablet touch interaction
  */
-const ThreeCanvas = ({ config = {}, isLoading = false }) => {
+const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo = false, canRedo = false, onRecalculate, onConfirmOrder }) => {
   const canvasRef = useRef();
+  const [zoomLevel, setZoomLevel] = useState(65);
+  const MAX_ZOOM = 100;
+
+  // Combined ring models from local public folder
+  const bandPath = config.bandPath || "http://localhost:5173/models/ring/BAND_CLASSIC.glb";
+  const headPath = "http://localhost:5173/models/ring/HEAD_4PRONGS.glb";
+  const stonePath = config.stonePath || "http://localhost:5173/models/ring/STONE_BRILLIANT.glb";
+
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 2, MAX_ZOOM));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 2, 2));
 
   return (
     <div className="three-canvas-container">
+      {/* Undo/Redo controls - left side */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '20px',
+        zIndex: 10,
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '8px',
+        alignItems: 'flex-start'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Undo"
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: canUndo ? 'white' : '#f0f0f0',
+              cursor: canUndo ? 'pointer' : 'not-allowed',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: canUndo ? 1 : 0.5
+            }}
+          >
+            ↶
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Undo</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="Redo"
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: canRedo ? 'white' : '#f0f0f0',
+              cursor: canRedo ? 'pointer' : 'not-allowed',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: canRedo ? 1 : 0.5
+            }}
+          >
+            ↷
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Redo</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={() => {
+              if (window.confirm("Are you sure you want to recalculate the design? All current changes will be lost.")) {
+                onRecalculate();
+              }
+            }}
+            disabled={isLoading}
+            title="Recalculate"
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '20px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: isLoading ? '#f0f0f0' : 'white',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: isLoading ? 0.5 : 1
+            }}
+          >
+            ⟳
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Recalculate</span>
+        </div>
+      </div>
+      {/* Zoom controls */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        right: '20px',
+        zIndex: 10,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        alignItems: 'center'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={handleZoomIn}
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: 'white',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}
+          >
+            +
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Zoom In</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={handleZoomOut}
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: 'white',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}
+          >
+            −
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Zoom Out</span>
+        </div>
+      </div>
+
+      {/* Confirm Order button - top center */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 10
+      }}>
+        <button
+          onClick={onConfirmOrder}
+          disabled={isLoading}
+          title="Confirm Order"
+          style={{
+            padding: '12px 28px',
+            fontSize: '0.95rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            borderRadius: '6px',
+            border: 'none',
+            background: isLoading ? '#999' : '#000',
+            color: 'white',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            opacity: isLoading ? 0.6 : 1
+          }}
+        >
+          Confirm Order
+        </button>
+      </div>
+
       <Canvas
         ref={canvasRef}
-        camera={{ position: [0, 0, 3], fov: 50 }}
+        camera={{ position: [0, 0, 4], fov: 50 }}
         className="canvas-main"
         gl={{ antialias: true, alpha: true }}
       >
+        {/* HDRI Environment for realistic reflections */}
+        <React.Suspense fallback={null}>
+          <Environment files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr" background={false} />
+        </React.Suspense>
         {/* Lighting setup for jewelry */}
         <ambientLight intensity={0.5} />
         <directionalLight position={[5, 10, 7]} intensity={1} />
         <directionalLight position={[-5, -10, -7]} intensity={0.5} />
         <pointLight position={[0, 5, 0]} intensity={0.8} />
 
-        {/* Model with hybrid material logic */}
-        <JewelModel
-          modelPath={
-            config.modelPath ||
-            "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"
-          }
-          config={config}
-        />
+        {/* Render combined ring model */}
+        <React.Suspense fallback={null}>
+          <GLTFModel modelPath={bandPath} scale={zoomLevel} materialColor={config.materialColor} config={config} />
+          <GLTFModel modelPath={headPath} scale={zoomLevel} materialColor={config.materialColor} config={config} />
+          <GLTFModel modelPath={stonePath} scale={zoomLevel} config={config} />
+        </React.Suspense>
 
         {/* Orbit controls for touch interaction */}
         <OrbitControls
@@ -189,8 +495,8 @@ const ThreeCanvas = ({ config = {}, isLoading = false }) => {
           enableZoom={true}
           enablePan={true}
           enableRotate={true}
-          minDistance={1}
-          maxDistance={10}
+          minDistance={0.5}
+          maxDistance={100}
         />
       </Canvas>
 
