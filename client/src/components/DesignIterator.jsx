@@ -107,8 +107,8 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   const [config, setConfig] = useState(initialConfig);
 
-  const [history, setHistory] = useState([config]);
-  const [historyIndex, setHistoryIndex] = useState(0);
+  const [historyState, setHistoryState] = useState({ history: [initialConfig], historyIndex: 0 });
+  const { history, historyIndex } = historyState;
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -117,16 +117,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   // INSTANT updates: Material properties that don't require server
   const handleInstantUpdate = useCallback((key, value) => {
-    setConfig((prev) => {
-      const updated = { ...prev, [key]: value };
-      // Update history for undo/redo
-      const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push(updated);
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-      return updated;
-    });
-  }, [history, historyIndex]);
+    const updated = { ...config, [key]: value };
+    setConfig(updated);
+    // Update history for undo/redo atomically
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(updated);
+    setHistoryState({ history: newHistory, historyIndex: newHistory.length - 1 });
+  }, [config, history, historyIndex]);
 
   // ASYNC updates: Geometry changes that require server
   const handleGeometryUpdate = useCallback(
@@ -153,8 +150,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         const updated = { ...config, [key]: value, modelPath: result.modelPath };
         const newHistory = history.slice(0, historyIndex + 1);
         newHistory.push(updated);
-        setHistory(newHistory);
-        setHistoryIndex(newHistory.length - 1);
+        setHistoryState({ history: newHistory, historyIndex: newHistory.length - 1 });
         setConfig(updated);
       } catch (error) {
         console.error("Geometry update failed:", error);
@@ -223,7 +219,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const handleUndo = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
+      setHistoryState({ ...historyState, historyIndex: newIndex });
       setConfig(history[newIndex]);
     }
   };
@@ -232,7 +228,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const handleRedo = () => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
+      setHistoryState({ ...historyState, historyIndex: newIndex });
       setConfig(history[newIndex]);
     }
   };
@@ -258,8 +254,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       setConfig(fullConfig);
       setEstimatedDays(getEstimatedDays(fullConfig));
       setEstimatedPrice(getEstimatedPrice(fullConfig));
-      setHistory([fullConfig]);
-      setHistoryIndex(0);
+      setHistoryState({ history: [fullConfig], historyIndex: 0 });
       setIsLoading(false);
       setLoadingMessage("");
     }, 500);
@@ -303,16 +298,11 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     setRight(
       <div className="design-header-right">
         <div className="model-tag">Model: {config.modelPath || 'default'}</div>
-        <div className="control-group">
-          <button className="btn-icon" title="Undo" onClick={handleUndo} disabled={!canUndo}>↶</button>
-          <button className="btn-icon" title="Redo" onClick={handleRedo} disabled={!canRedo}>↷</button>
-          <button className="btn-icon" title="Recalculate" onClick={handleRecalculate} disabled={isLoading}>⟳</button>
-        </div>
       </div>
     );
 
     return () => setRight(null);
-  }, [config.modelPath, canUndo, canRedo, isLoading]);
+  }, [config.modelPath]);
 
   return (
     <div className="design-iterator">
@@ -322,12 +312,28 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
           <ThreeCanvas
             config={config}
             isLoading={isLoading}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onRecalculate={handleRecalculate}
+            onConfirmOrder={handleConfirmOrder}
           />
           <div className="design-feedback">It's the one!</div>
         </section>
 
         {/* Right side: Controls */}
         <aside className="controls-section">
+          {/* Pricing Info */}
+          <div className="pricing-block">
+            <h3>Estimated time for creation</h3>
+            <p className="estimated-days">{estimatedDays} days</p>
+
+            <h3>Live quote:</h3>
+            <p className="live-price">€{estimatedPrice}</p>
+            <button className="btn-more-details">... more details</button>
+          </div>
+
           {/* Band Design */}
           <div className="control-block">
             <label htmlFor="bandDesign">Band Design</label>
@@ -439,26 +445,9 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
             />
             <div className="slider-value">{(config.clarity * 100).toFixed(0)}%</div>
           </div>
-
-          {/* Pricing Info */}
-          <div className="pricing-block">
-            <h3>Estimated time for creation</h3>
-            <p className="estimated-days">{estimatedDays} days</p>
-
-            <h3>Live quote:</h3>
-            <p className="live-price">€{estimatedPrice}</p>
-            <button className="btn-more-details">... more details</button>
-          </div>
-
-          {/* Confirm Order Button */}
-          <button
-            className="btn-confirm-order"
-            onClick={handleConfirmOrder}
-            disabled={isLoading}
-          >
-            Confirm Order
-          </button>
         </aside>
+
+
       </main>
       {/* Confirmation Modal */}
       {showConfirmModal && (

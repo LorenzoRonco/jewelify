@@ -79,7 +79,7 @@ const GLTFModel = ({ modelPath, scale = 1, materialColor, config }) => {
   }, [scene, materialColor, config?.polish, config?.stoneColor, config?.clarity]);
 
   // Usa direttamente primitive per renderizzare la scene
-  return <primitive object={scene} scale={scale} />;
+  return <primitive object={scene} scale={scale} position={[0, -0.5, 0]} />;
 };
 
 const JewelModel = ({
@@ -261,9 +261,9 @@ const JewelModel = ({
  * Main 3D rendering component with orbit controls and responsive sizing
  * Optimized for tablet touch interaction
  */
-const ThreeCanvas = ({ config = {}, isLoading = false }) => {
+const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo = false, canRedo = false, onRecalculate, onConfirmOrder }) => {
   const canvasRef = useRef();
-  const [zoomLevel, setZoomLevel] = useState(30);
+  const [zoomLevel, setZoomLevel] = useState(65);
   const MAX_ZOOM = 100;
 
   // Combined ring models from local public folder
@@ -276,6 +276,103 @@ const ThreeCanvas = ({ config = {}, isLoading = false }) => {
 
   return (
     <div className="three-canvas-container">
+      {/* Undo/Redo controls - left side */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '20px',
+        zIndex: 10,
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '8px',
+        alignItems: 'flex-start'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Undo"
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: canUndo ? 'white' : '#f0f0f0',
+              cursor: canUndo ? 'pointer' : 'not-allowed',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: canUndo ? 1 : 0.5
+            }}
+          >
+            ↶
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Undo</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="Redo"
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: canRedo ? 'white' : '#f0f0f0',
+              cursor: canRedo ? 'pointer' : 'not-allowed',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: canRedo ? 1 : 0.5
+            }}
+          >
+            ↷
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Redo</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={() => {
+              if (window.confirm("Are you sure you want to recalculate the design? All current changes will be lost.")) {
+                onRecalculate();
+              }
+            }}
+            disabled={isLoading}
+            title="Recalculate"
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '20px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: isLoading ? '#f0f0f0' : 'white',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: isLoading ? 0.5 : 1
+            }}
+          >
+            ⟳
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Recalculate</span>
+        </div>
+      </div>
       {/* Zoom controls */}
       <div style={{
         position: 'absolute',
@@ -284,39 +381,90 @@ const ThreeCanvas = ({ config = {}, isLoading = false }) => {
         zIndex: 10,
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px'
+        gap: '10px',
+        alignItems: 'center'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={handleZoomIn}
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: 'white',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}
+          >
+            +
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Zoom In</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={handleZoomOut}
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: 'white',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}
+          >
+            −
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Zoom Out</span>
+        </div>
+      </div>
+
+      {/* Confirm Order button - top center */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 10
       }}>
         <button
-          onClick={handleZoomIn}
+          onClick={onConfirmOrder}
+          disabled={isLoading}
+          title="Confirm Order"
           style={{
-            width: '50px',
-            height: '50px',
-            fontSize: '24px',
-            borderRadius: '50%',
-            border: '2px solid #ddd',
-            background: 'white',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            padding: '12px 28px',
+            fontSize: '0.95rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            borderRadius: '6px',
+            border: 'none',
+            background: isLoading ? '#999' : '#000',
+            color: 'white',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            opacity: isLoading ? 0.6 : 1
           }}
         >
-          +
-        </button>
-        <button
-          onClick={handleZoomOut}
-          style={{
-            width: '50px',
-            height: '50px',
-            fontSize: '24px',
-            borderRadius: '50%',
-            border: '2px solid #ddd',
-            background: 'white',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-          }}
-        >
-          −
+          Confirm Order
         </button>
       </div>
+
       <Canvas
         ref={canvasRef}
         camera={{ position: [0, 0, 4], fov: 50 }}
