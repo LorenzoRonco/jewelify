@@ -116,14 +116,21 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const [estimatedDays, setEstimatedDays] = useState("30-35");
 
   // INSTANT updates: Material properties that don't require server
+  const handleInstantUpdates = useCallback((updates) => {
+    setConfig((prevConfig) => {
+      const updated = { ...prevConfig, ...updates };
+      setHistoryState((prevHistory) => {
+        const newHistory = prevHistory.history.slice(0, prevHistory.historyIndex + 1);
+        newHistory.push(updated);
+        return { history: newHistory, historyIndex: newHistory.length - 1 };
+      });
+      return updated;
+    });
+  }, []);
+
   const handleInstantUpdate = useCallback((key, value) => {
-    const updated = { ...config, [key]: value };
-    setConfig(updated);
-    // Update history for undo/redo atomically
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(updated);
-    setHistoryState({ history: newHistory, historyIndex: newHistory.length - 1 });
-  }, [config, history, historyIndex]);
+    handleInstantUpdates({ [key]: value });
+  }, [handleInstantUpdates]);
 
   // ASYNC updates: Geometry changes that require server
   const handleGeometryUpdate = useCallback(
@@ -193,6 +200,11 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     return price;
   }
 
+  const updateEstimates = useCallback((nextConfig) => {
+    setEstimatedDays(getEstimatedDays(nextConfig));
+    setEstimatedPrice(getEstimatedPrice(nextConfig));
+  }, []);
+
   // Handle config changes (route to instant or async)
   const handleConfigChange = (key, value) => {
     const instantKeys = [
@@ -211,8 +223,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     // Update estimated values after any change
     const nextConfig = { ...config, [key]: value };
-    setEstimatedDays(getEstimatedDays(nextConfig));
-    setEstimatedPrice(getEstimatedPrice(nextConfig));
+    updateEstimates(nextConfig);
   };
 
   // Undo
@@ -345,8 +356,16 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
                 let bandFile = "BAND_CLASSIC.glb";
                 if (val === "Knife") bandFile = "BAND_KNIFE.glb";
                 if (val === "Flat") bandFile = "BAND_FLAT.glb";
-                handleInstantUpdate("bandDesign", val);
-                handleInstantUpdate("bandPath", `http://localhost:5173/models/ring/${bandFile}`);
+                const nextConfig = {
+                  ...config,
+                  bandDesign: val,
+                  bandPath: `http://localhost:5173/models/ring/${bandFile}`,
+                };
+                handleInstantUpdates({
+                  bandDesign: val,
+                  bandPath: `http://localhost:5173/models/ring/${bandFile}`,
+                });
+                updateEstimates(nextConfig);
               }}
               disabled={isLoading}
             >
@@ -401,8 +420,16 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
                 let stoneFile = "STONE_BRILLIANT.glb";
                 if (val === "diamond") stoneFile = "STONE_DIAMOND.glb";
                 if (val === "gem") stoneFile = "STONE_GEM.glb";
-                handleInstantUpdate("stoneShape", val);
-                handleInstantUpdate("stonePath", `http://localhost:5173/models/ring/${stoneFile}`);
+                const nextConfig = {
+                  ...config,
+                  stoneShape: val,
+                  stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+                };
+                handleInstantUpdates({
+                  stoneShape: val,
+                  stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+                });
+                updateEstimates(nextConfig);
               }}
               disabled={isLoading}
             >
