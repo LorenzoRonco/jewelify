@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
 import { useLocation } from "react-router";
 import ThreeCanvas from "./ThreeCanvas";
@@ -114,9 +114,23 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [estimatedPrice, setEstimatedPrice] = useState(1500);
   const [estimatedDays, setEstimatedDays] = useState("30-35");
+  const [dropdownToast, setDropdownToast] = useState(null);
+  const popupTimerRef = useRef(null);
+  const updateDelayRef = useRef(null);
+
+  const runAfterPopup = useCallback((message, action) => {
+    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+    if (updateDelayRef.current) clearTimeout(updateDelayRef.current);
+    const duration = 500 + Math.random() * 1000; // 0.5s to 1.5s
+    setDropdownToast(message || "Generating...");
+    popupTimerRef.current = setTimeout(() => setDropdownToast(null), duration);
+    updateDelayRef.current = setTimeout(() => {
+      action();
+    }, duration);
+  }, []);
 
   // INSTANT updates: Material properties that don't require server
-  const handleInstantUpdates = useCallback((updates) => {
+  const handleInstantUpdates = useCallback((updates, afterUpdate) => {
     setConfig((prevConfig) => {
       const updated = { ...prevConfig, ...updates };
       setHistoryState((prevHistory) => {
@@ -124,12 +138,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         newHistory.push(updated);
         return { history: newHistory, historyIndex: newHistory.length - 1 };
       });
+      if (afterUpdate) afterUpdate(updated);
       return updated;
     });
   }, []);
 
-  const handleInstantUpdate = useCallback((key, value) => {
-    handleInstantUpdates({ [key]: value });
+  const handleInstantUpdate = useCallback((key, value, afterUpdate) => {
+    handleInstantUpdates({ [key]: value }, afterUpdate);
   }, [handleInstantUpdates]);
 
   // ASYNC updates: Geometry changes that require server
@@ -216,14 +231,15 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     ];
 
     if (instantKeys.includes(key)) {
-      handleInstantUpdate(key, value);
-    } else {
-      handleGeometryUpdate(key, value);
+      handleInstantUpdate(key, value, updateEstimates);
+      return;
     }
 
     // Update estimated values after any change
     const nextConfig = { ...config, [key]: value };
     updateEstimates(nextConfig);
+
+    handleGeometryUpdate(key, value);
   };
 
   // Undo
@@ -243,6 +259,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       setConfig(history[newIndex]);
     }
   };
+
+  React.useEffect(() => {
+    return () => {
+      if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+      if (updateDelayRef.current) clearTimeout(updateDelayRef.current);
+    };
+  }, []);
 
   // Recalculate: randomize all config parameters
   const handleRecalculate = () => {
@@ -317,6 +340,12 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   return (
     <div className="design-iterator">
+      {dropdownToast && (
+        <div className="dropdown-toast">
+          <span className="spinner" aria-hidden="true"></span>
+          <span>{dropdownToast}</span>
+        </div>
+      )}
       <main className="iterator-main">
         {/* Left side: 3D Canvas */}
         <section className="canvas-section">
@@ -356,16 +385,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
                 let bandFile = "BAND_CLASSIC.glb";
                 if (val === "Knife") bandFile = "BAND_KNIFE.glb";
                 if (val === "Flat") bandFile = "BAND_FLAT.glb";
-                const nextConfig = {
-                  ...config,
+                const updates = {
                   bandDesign: val,
                   bandPath: `http://localhost:5173/models/ring/${bandFile}`,
                 };
-                handleInstantUpdates({
-                  bandDesign: val,
-                  bandPath: `http://localhost:5173/models/ring/${bandFile}`,
+                runAfterPopup(`Generating band update...`, () => {
+                  handleInstantUpdates(updates, updateEstimates);
                 });
-                updateEstimates(nextConfig);
               }}
               disabled={isLoading}
             >
@@ -382,7 +408,12 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
             <select
               id="materialColor"
               value={config.materialColor}
-              onChange={(e) => handleConfigChange("materialColor", e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                runAfterPopup(`Generating metal update...`, () => {
+                  handleConfigChange("materialColor", val);
+                });
+              }}
             >
               <option value="gold">Gold</option>
               <option value="silver">Silver</option>
@@ -420,16 +451,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
                 let stoneFile = "STONE_BRILLIANT.glb";
                 if (val === "diamond") stoneFile = "STONE_DIAMOND.glb";
                 if (val === "gem") stoneFile = "STONE_GEM.glb";
-                const nextConfig = {
-                  ...config,
+                const updates = {
                   stoneShape: val,
                   stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
                 };
-                handleInstantUpdates({
-                  stoneShape: val,
-                  stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+                runAfterPopup(`Generating stone shape...`, () => {
+                  handleInstantUpdates(updates, updateEstimates);
                 });
-                updateEstimates(nextConfig);
               }}
               disabled={isLoading}
             >
@@ -445,7 +473,12 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
             <select
               id="stoneColor"
               value={config.stoneColor}
-              onChange={(e) => handleConfigChange("stoneColor", e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                runAfterPopup(`Generating stone color...`, () => {
+                  handleConfigChange("stoneColor", val);
+                });
+              }}
             >
               <option value="clear">Clear</option>
               <option value="pink">Pink</option>
