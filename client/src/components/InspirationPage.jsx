@@ -54,8 +54,8 @@ const InspirationPage = () => {
   };
 
   const handleSelect = () => {
-    // Always use a shared Bracelet.obj model for now and mark from 'inspiration'
-    navigate("/design", { state: { modelPath: "/models/Bracelet.obj", from: 'inspiration' } });
+    // Route through generating splash then into the DesignIterator
+    navigate("/generating", { state: { modelPath: "/models/Bracelet.obj", from: 'inspiration' } });
   };
 
   const { setLeft, setRight } = useHeader();

@@ -17,8 +17,8 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
   const from = location?.state?.from || null;
 
   const handleSelect = (modelPath) => {
-    // Navigate to design and pass the modelPath and where we came from
-    navigate("/design", { state: { modelPath, from: 'concepts' } });
+    // Navigate to generating splash first, then DesignIterator
+    navigate("/generating", { state: { modelPath, from: 'concepts' } });
   };
 
   const handleBack = () => {
