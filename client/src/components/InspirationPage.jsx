@@ -54,8 +54,8 @@ const InspirationPage = () => {
   };
 
   const handleSelect = () => {
-    // Route through generating splash then into the DesignIterator
-    navigate("/generating", { state: { modelPath: "/models/Bracelet.obj", from: 'inspiration' } });
+    // Go directly to the designer for now
+    navigate("/design", { state: { modelPath: "/models/Bracelet.obj", from: 'inspiration' } });
   };
 
   const { setLeft, setRight } = useHeader();
