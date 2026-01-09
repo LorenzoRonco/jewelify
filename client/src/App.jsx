@@ -17,7 +17,7 @@ function App() {
 
   const handleSurveyComplete = (answers) => {
     setSurveyAnswers(answers);
-    navigate('/concepts', { state: { from: 'survey' } });
+    navigate('/generating', { state: { from: 'survey' } });
   };
 
   const handleExitDesign = () => {

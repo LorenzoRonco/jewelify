@@ -4,8 +4,8 @@ import "../styles/GeneratingPage.css";
 import { useHeader } from "./HeaderContext";
 
 const messages = [
-  "Generating 3D model…",
-  "Rendering model…",
+  "Generating 3 concepts from the survey entry…",
+  "Rendering 3D models…",
   "Optimizing materials…",
   "Polishing surfaces…",
   "Setting up lighting…",
@@ -37,10 +37,10 @@ export default function GeneratingPage() {
     return () => clearInterval(cycle);
   }, []);
 
-  // After duration, forward to /design preserving state (modelPath/from)
+  // After duration, forward to /concepts preserving state (e.g., from: 'survey')
   useEffect(() => {
     const t = setTimeout(() => {
-      navigate("/design", { state: location.state, replace: true });
+      navigate("/concepts", { state: location.state, replace: true });
     }, totalDuration);
     return () => clearTimeout(t);
   }, [navigate, location.state, totalDuration]);

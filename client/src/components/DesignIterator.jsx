@@ -115,6 +115,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const [estimatedPrice, setEstimatedPrice] = useState(1500);
   const [estimatedDays, setEstimatedDays] = useState("30-35");
   const [dropdownToast, setDropdownToast] = useState(null);
+  const [showPriceDetails, setShowPriceDetails] = useState(false);
   const popupTimerRef = useRef(null);
   const updateDelayRef = useRef(null);
 
@@ -213,6 +214,25 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     if (price > 2500) price = 2500;
     if (price < 1200) price = 1200;
     return price;
+  }
+
+  function getPriceBreakdown(config) {
+    // Mirror the pricing logic to create line items that sum to estimatedPrice
+    const items = [];
+    let base = 1200;
+    items.push({ label: "Base craftsmanship", amount: base });
+
+    if (config.materialColor === 'platinum') items.push({ label: "Platinum material upcharge", amount: 600 });
+    if (config.materialColor === 'rose') items.push({ label: "Rose alloy premium", amount: 200 });
+    if (config.polish > 0.7) items.push({ label: "High polish finish", amount: 150 });
+    if (config.clarity > 0.7) items.push({ label: "Stone clarity selection", amount: 120 });
+    if (config.stoneColor !== 'clear') items.push({ label: "Colored gemstone", amount: 180 });
+
+    const dynamic = Math.round((config.polish + config.clarity) * 100);
+    if (dynamic) items.push({ label: "Detailing & QC (polish/clarity)", amount: dynamic });
+
+    // Cap/Bounds are applied on total later, but for transparency we show the raw items
+    return items;
   }
 
   const updateEstimates = useCallback((nextConfig) => {
@@ -371,7 +391,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
             <h3>Live quote:</h3>
             <p className="live-price">€{estimatedPrice}</p>
-            <button className="btn-more-details">... more details</button>
+            <button className="btn-more-details" onClick={() => setShowPriceDetails(true)}>... more details</button>
           </div>
 
           {/* Band Design */}
@@ -528,6 +548,43 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
                 </button>
                 <button className="btn-purchase" onClick={handleExecutePurchase}>
                   Complete Purchase
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Price Details Modal */}
+      {showPriceDetails && (
+        <>
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <button
+                className="modal-close"
+                onClick={() => setShowPriceDetails(false)}
+              >
+                ✕
+              </button>
+              <h2>Price Breakdown</h2>
+
+              <div className="order-summary">
+                {getPriceBreakdown(config).map((it, idx) => (
+                  <div key={idx} className="summary-item">
+                    <span>{it.label}</span>
+                    <strong>€{it.amount}</strong>
+                  </div>
+                ))}
+                <div className="summary-divider"></div>
+                <div className="summary-item summary-price">
+                  <span>Estimated Total</span>
+                  <strong>€{estimatedPrice}</strong>
+                </div>
+              </div>
+
+              <div className="modal-actions" style={{ gridTemplateColumns: '1fr' }}>
+                <button className="btn-cancel" onClick={() => setShowPriceDetails(false)}>
+                  Close
                 </button>
               </div>
             </div>
