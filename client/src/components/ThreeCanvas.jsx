@@ -373,66 +373,7 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
           }}>Recalculate</span>
         </div>
       </div>
-      {/* Zoom controls */}
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        right: '20px',
-        zIndex: 10,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        alignItems: 'center'
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-          <button
-            onClick={handleZoomIn}
-            style={{
-              width: '50px',
-              height: '50px',
-              fontSize: '24px',
-              borderRadius: '50%',
-              border: '2px solid #ddd',
-              background: 'white',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-            }}
-          >
-            +
-          </button>
-          <span style={{
-            fontSize: '11px',
-            color: '#888',
-            fontWeight: '500',
-            textAlign: 'center',
-            minWidth: '50px'
-          }}>Zoom In</span>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-          <button
-            onClick={handleZoomOut}
-            style={{
-              width: '50px',
-              height: '50px',
-              fontSize: '24px',
-              borderRadius: '50%',
-              border: '2px solid #ddd',
-              background: 'white',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-            }}
-          >
-            −
-          </button>
-          <span style={{
-            fontSize: '11px',
-            color: '#888',
-            fontWeight: '500',
-            textAlign: 'center',
-            minWidth: '50px'
-          }}>Zoom Out</span>
-        </div>
-      </div>
+      
 
       {/* Confirm Order button - top center */}
       <div style={{
