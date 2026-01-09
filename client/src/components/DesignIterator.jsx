@@ -84,10 +84,11 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     let stoneFile = "STONE_BRILLIANT.glb";
     if (baseConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
     if (baseConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     initialConfig = {
       ...baseConfig,
-      bandPath: `http://localhost:5173/models/ring/${bandFile}`,
-      stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+      bandPath: `${baseUrl}/models/ring/${bandFile}`,
+      stonePath: `${baseUrl}/models/ring/${stoneFile}`,
     };
   } else {
     let incomingModelPath = location?.state?.modelPath;
@@ -302,8 +303,8 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       if (newConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
       const fullConfig = {
         ...newConfig,
-        bandPath: `http://localhost:5173/models/ring/${bandFile}`,
-        stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+        bandPath: `${baseUrl}/models/ring/${bandFile}`,
+        stonePath: `${baseUrl}/models/ring/${stoneFile}`,
       };
       setConfig(fullConfig);
       setEstimatedDays(getEstimatedDays(fullConfig));
@@ -407,7 +408,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
                 if (val === "Flat") bandFile = "BAND_FLAT.glb";
                 const updates = {
                   bandDesign: val,
-                  bandPath: `http://localhost:5173/models/ring/${bandFile}`,
+                  bandPath: `${baseUrl}/models/ring/${bandFile}`,
                 };
                 runAfterPopup(`Generating band update...`, () => {
                   handleInstantUpdates(updates, updateEstimates);
@@ -473,7 +474,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
                 if (val === "gem") stoneFile = "STONE_GEM.glb";
                 const updates = {
                   stoneShape: val,
-                  stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+                  stonePath: `${baseUrl}/models/ring/${stoneFile}`,
                 };
                 runAfterPopup(`Generating stone shape...`, () => {
                   handleInstantUpdates(updates, updateEstimates);
