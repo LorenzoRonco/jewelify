@@ -116,6 +116,9 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const [estimatedDays, setEstimatedDays] = useState("30-35");
   const [dropdownToast, setDropdownToast] = useState(null);
   const [showPriceDetails, setShowPriceDetails] = useState(false);
+  const [selectedPart, setSelectedPart] = useState(null); // Per il modale di customizzazione
+  const [aiPrompt, setAiPrompt] = useState(""); // Per il prompt AI
+  const [showRecalculateModal, setShowRecalculateModal] = useState(false); // Per il modale di recalculate
   const popupTimerRef = useRef(null);
   const updateDelayRef = useRef(null);
 
@@ -289,6 +292,20 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   // Recalculate: randomize all config parameters
   const handleRecalculate = () => {
+    // Apri il modale di recalculate con prompt
+    setShowRecalculateModal(true);
+    setAiPrompt("");
+  };
+
+  // Applica recalculate con prompt AI
+  const handleRecalculateWithPrompt = () => {
+    if (!aiPrompt.trim()) {
+      alert("Please enter a prompt for the design");
+      return;
+    }
+
+    console.log("Recalculate with prompt:", aiPrompt);
+
     setIsLoading(true);
     setLoadingMessage("Recalculating design...");
     setTimeout(() => {
@@ -311,6 +328,8 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       setHistoryState({ history: [fullConfig], historyIndex: 0 });
       setIsLoading(false);
       setLoadingMessage("");
+      setShowRecalculateModal(false);
+      setAiPrompt("");
     }, 500);
   };
 
@@ -330,6 +349,137 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const canRedo = historyIndex < history.length - 1;
 
   const { setLeft, setRight } = useHeader();
+
+  // Handle 3D model part click
+  const handlePartClick = (partName) => {
+    setSelectedPart(partName);
+    setAiPrompt(""); // Reset prompt quando apri un nuovo modale
+  };
+
+  // Handle AI prompt submit
+  const handleAiPromptSubmit = () => {
+    if (!aiPrompt.trim()) {
+      alert("Please enter a prompt for the AI");
+      return;
+    }
+
+    console.log(`AI Prompt for ${selectedPart}:`, aiPrompt);
+
+    // Applica cambiamenti simulati in base al pezzo selezionato
+    applyAiChanges(selectedPart, aiPrompt);
+
+    setAiPrompt("");
+    setSelectedPart(null);
+  };
+
+  // Applica cambiamenti simulati basati sul prompt AI
+  const applyAiChanges = (part, prompt) => {
+    const updates = {};
+
+    if (part === "stone") {
+      // Cambia shape della pietra
+      const shapes = ["brilliant", "diamond", "gem"];
+      const currentShape = config.stoneShape || "brilliant";
+      const availableShapes = shapes.filter(s => s !== currentShape);
+      const randomShape = availableShapes[Math.floor(Math.random() * availableShapes.length)];
+
+      console.log(`Changing stone shape from ${currentShape} to ${randomShape}`);
+
+      // Usa handleConfigChange per la stone shape (questo gestisce anche il modello 3D)
+      handleConfigChange("stoneShape", randomShape);
+
+      // Cambia colore della pietra casualmente
+      const colors = ["clear", "pink", "blue", "green", "red"];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      if (randomColor !== config.stoneColor) {
+        updates.stoneColor = randomColor;
+      }
+
+      // Aumenta leggermente la clarity
+      const newClarity = Math.min(config.clarity + 0.1, 1);
+      if (newClarity !== config.clarity) {
+        updates.clarity = newClarity;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        handleInstantUpdates(updates, updateEstimates);
+      }
+    } else if (part === "band") {
+      // Cambia design della band
+      const designs = ["Classic", "Knife", "Flat"];
+      const currentDesign = config.bandDesign || "Classic";
+      const availableDesigns = designs.filter(d => d !== currentDesign);
+      const randomDesign = availableDesigns[Math.floor(Math.random() * availableDesigns.length)];
+
+      console.log(`Changing band from ${currentDesign} to ${randomDesign}`);
+
+      // Usa handleConfigChange per il bandDesign (questo farà gli aggiornamenti corretti)
+      handleConfigChange("bandDesign", randomDesign);
+
+      // Aumenta il polish
+      const newPolish = Math.min(config.polish + 0.15, 1);
+      if (newPolish !== config.polish) {
+        handleInstantUpdate("polish", newPolish, updateEstimates);
+      }
+    } else if (part === "head") {
+      // Cambia il materialColor casualmente
+      const colors = ["gold", "silver", "rose", "platinum"];
+      const currentColor = config.materialColor || "gold";
+      const availableColors = colors.filter(c => c !== currentColor);
+      const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+
+      if (randomColor !== currentColor) {
+        updates.materialColor = randomColor;
+      }
+
+      // Aumenta clarity leggermente
+      const newClarity = Math.min(config.clarity + 0.05, 1);
+      if (newClarity !== config.clarity) {
+        updates.clarity = newClarity;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        handleInstantUpdates(updates, updateEstimates);
+      }
+    }
+  };
+
+  // Ottieni informazioni per il modale in base alla parte selezionata
+  const getPartInfo = (partName) => {
+    const partInfo = {
+      stone: {
+        title: "Stone Customization",
+        icon: "💎",
+        description: "Customize your gemstone with different shapes, colors, and clarity levels.",
+        options: [
+          { label: "Shape", value: config.stoneShape || "brilliant" },
+          { label: "Color", value: config.stoneColor || "clear" },
+          { label: "Clarity", value: `${(config.clarity * 100).toFixed(0)}%` },
+        ]
+      },
+      head: {
+        title: "Head Customization",
+        icon: "✨",
+        description: "The head holds your gemstone securely in place. Choose your prong style and metal finish.",
+        options: [
+          { label: "Style", value: "4-Prong" },
+          { label: "Metal", value: config.materialColor || "gold" },
+          { label: "Finish", value: config.metalFinish || "polished" },
+        ]
+      },
+      band: {
+        title: "Band Customization",
+        icon: "⭐",
+        description: "Customize the band design, width, and metal type to match your style.",
+        options: [
+          { label: "Design", value: config.bandDesign || "Classic" },
+          { label: "Metal", value: config.materialColor || "gold" },
+          { label: "Polish", value: `${(config.polish * 100).toFixed(0)}%` },
+        ]
+      }
+    };
+    return partInfo[partName] || {};
+  };
 
   React.useEffect(() => {
     setLeft(
@@ -378,6 +528,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
             canRedo={canRedo}
             onRecalculate={handleRecalculate}
             onConfirmOrder={handleConfirmOrder}
+            onPartClick={handlePartClick}
           />
           <div className="design-feedback">It's the one!</div>
         </section>
@@ -394,136 +545,39 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
             <button className="btn-more-details" onClick={() => setShowPriceDetails(true)}>... more details</button>
           </div>
 
-          {/* Band Design */}
-          <div className="control-block">
-            <label htmlFor="bandDesign">Band Design</label>
-            <select
-              id="bandDesign"
-              value={config.bandDesign || "Classic"}
-              onChange={e => {
-                const val = e.target.value;
-                let bandFile = "BAND_CLASSIC.glb";
-                if (val === "Knife") bandFile = "BAND_KNIFE.glb";
-                if (val === "Flat") bandFile = "BAND_FLAT.glb";
-                const updates = {
-                  bandDesign: val,
-                  bandPath: `http://localhost:5173/models/ring/${bandFile}`,
-                };
-                runAfterPopup(`Generating band update...`, () => {
-                  handleInstantUpdates(updates, updateEstimates);
-                });
-              }}
-              disabled={isLoading}
+          {/* Clickable Ring Parts */}
+          <div className="ring-parts-section">
+            <h3>Customize</h3>
+
+            {/* Stone */}
+            <div
+              className="clickable-part head-part"
+              onClick={() => handlePartClick("stone")}
+              title="Click to customize the stone"
             >
-              <option value="Classic">Classic</option>
-              <option value="Knife">Knife</option>
-              <option value="Flat">Flat</option>
-            </select>
-          </div>
+              <span className="part-icon">💎</span>
+              <span className="part-name">Stone</span>
+            </div>
 
-
-          {/* Material Color - INSTANT */}
-          <div className="control-block">
-            <label htmlFor="materialColor">Metal</label>
-            <select
-              id="materialColor"
-              value={config.materialColor}
-              onChange={(e) => {
-                const val = e.target.value;
-                runAfterPopup(`Generating metal update...`, () => {
-                  handleConfigChange("materialColor", val);
-                });
-              }}
+            {/* Head */}
+            <div
+              className="clickable-part ring-part"
+              onClick={() => handlePartClick("head")}
+              title="Click to customize the head"
             >
-              <option value="gold">Gold</option>
-              <option value="silver">Silver</option>
-              <option value="rose">Rose</option>
-              <option value="platinum">Platinum</option>
-            </select>
-          </div>
+              <span className="part-icon">✨</span>
+              <span className="part-name">Head</span>
+            </div>
 
-          {/* Polish Level - INSTANT slider */}
-          <div className="control-block">
-            <label htmlFor="polish">Polish Level</label>
-            <input
-              id="polish"
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={config.polish}
-              onChange={(e) =>
-                handleConfigChange("polish", parseFloat(e.target.value))
-              }
-              className="slider"
-            />
-            <div className="slider-value">{(config.polish * 100).toFixed(0) === "0" ? "0% (matte)" : (config.polish * 100).toFixed(0) + "% (shiny)"}</div>
-          </div>
-
-          {/* Stone Shape */}
-          <div className="control-block">
-            <label htmlFor="stoneShape">STONE SHAPE</label>
-            <select
-              id="stoneShape"
-              value={config.stoneShape || "brilliant"}
-              onChange={e => {
-                const val = e.target.value;
-                let stoneFile = "STONE_BRILLIANT.glb";
-                if (val === "diamond") stoneFile = "STONE_DIAMOND.glb";
-                if (val === "gem") stoneFile = "STONE_GEM.glb";
-                const updates = {
-                  stoneShape: val,
-                  stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
-                };
-                runAfterPopup(`Generating stone shape...`, () => {
-                  handleInstantUpdates(updates, updateEstimates);
-                });
-              }}
-              disabled={isLoading}
+            {/* Band */}
+            <div
+              className="clickable-part band-part"
+              onClick={() => handlePartClick("band")}
+              title="Click to customize the band"
             >
-              <option value="brilliant">Brilliant</option>
-              <option value="diamond">Diamond</option>
-              <option value="gem">Gem</option>
-            </select>
-          </div>
-
-          {/* Stone Color - INSTANT */}
-          <div className="control-block">
-            <label htmlFor="stoneColor">Stone Color</label>
-            <select
-              id="stoneColor"
-              value={config.stoneColor}
-              onChange={(e) => {
-                const val = e.target.value;
-                runAfterPopup(`Generating stone color...`, () => {
-                  handleConfigChange("stoneColor", val);
-                });
-              }}
-            >
-              <option value="clear">Clear</option>
-              <option value="pink">Pink</option>
-              <option value="blue">Blue</option>
-              <option value="green">Green</option>
-              <option value="red">Red</option>
-            </select>
-          </div>
-
-          {/* Clarity - INSTANT slider */}
-          <div className="control-block">
-            <label htmlFor="clarity">Clarity</label>
-            <input
-              id="clarity"
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={config.clarity}
-              onChange={(e) =>
-                handleConfigChange("clarity", parseFloat(e.target.value))
-              }
-              className="slider"
-            />
-            <div className="slider-value">{(config.clarity * 100).toFixed(0)}%</div>
+              <span className="part-icon">⭐</span>
+              <span className="part-name">Band</span>
+            </div>
           </div>
         </aside>
 
@@ -585,6 +639,108 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
               <div className="modal-actions" style={{ gridTemplateColumns: '1fr' }}>
                 <button className="btn-cancel" onClick={() => setShowPriceDetails(false)}>
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Part Customization Modal */}
+      {selectedPart && (
+        <>
+          <div className="modal-overlay" onClick={() => setSelectedPart(null)}>
+            <div className="modal-content part-modal" onClick={(e) => e.stopPropagation()}>
+              <button
+                className="modal-close"
+                onClick={() => setSelectedPart(null)}
+              >
+                ✕
+              </button>
+
+              <div className="part-modal-header">
+                <span className="part-modal-icon">{getPartInfo(selectedPart).icon}</span>
+                <h2>{getPartInfo(selectedPart).title}</h2>
+              </div>
+
+              <p className="part-modal-description">
+                {getPartInfo(selectedPart).description}
+              </p>
+
+              <div className="part-modal-options">
+                <h3>Current Configuration</h3>
+                {getPartInfo(selectedPart).options?.map((option, idx) => (
+                  <div key={idx} className="part-option-item">
+                    <span className="option-label">{option.label}:</span>
+                    <span className="option-value">{option.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="ai-prompt-section">
+                <h3>Customize with AI</h3>
+                <p className="ai-prompt-hint">Describe how you'd like to modify this {selectedPart}</p>
+                <textarea
+                  className="ai-prompt-input"
+                  placeholder={`e.g., "Make the ${selectedPart} more elegant and vintage-inspired"`}
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  rows={4}
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={() => setSelectedPart(null)}>
+                  Cancel
+                </button>
+                <button className="btn-purchase" onClick={handleAiPromptSubmit}>
+                  Apply Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Recalculate Modal */}
+      {showRecalculateModal && (
+        <>
+          <div className="modal-overlay" onClick={() => setShowRecalculateModal(false)}>
+            <div className="modal-content part-modal" onClick={(e) => e.stopPropagation()}>
+              <button
+                className="modal-close"
+                onClick={() => setShowRecalculateModal(false)}
+              >
+                ✕
+              </button>
+
+              <div className="part-modal-header">
+                <span className="part-modal-icon">🎨</span>
+                <h2>Redesign Your Jewelry</h2>
+              </div>
+
+              <p className="part-modal-description">
+                Describe your dream jewelry design. Tell us about the style, materials, and overall aesthetic you envision.
+              </p>
+
+              <div className="ai-prompt-section">
+                <h3>Describe Your Vision</h3>
+                <p className="ai-prompt-hint">e.g., "I want a delicate vintage-style ring with a cushion-cut diamond and rose gold band"</p>
+                <textarea
+                  className="ai-prompt-input"
+                  placeholder="Describe your ideal jewelry design..."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  rows={5}
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={() => setShowRecalculateModal(false)}>
+                  Cancel
+                </button>
+                <button className="btn-purchase" onClick={handleRecalculateWithPrompt}>
+                  Redesign
                 </button>
               </div>
             </div>
