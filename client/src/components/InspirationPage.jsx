@@ -31,12 +31,11 @@ const categories = {
 };
 
 const makeImages = (prefix) => {
-  // Build 8 image objects (imageUrl, modelPath) for a 4x2 grid
+  // Build 28 image objects for inspirations grid
   const arr = [];
-  for (let i = 1; i <= 8; i++) {
-    const idx = String(i).padStart(2, "0");
-    const imageFile = `/images/${prefix}_${idx}.png`;
-    const modelFile = `/models/${prefix}_${idx}.obj`;
+  const modelFile = `/models/${prefix}.obj`; // Use same model for all
+  for (let i = 1; i <= 28; i++) {
+    const imageFile = `/images/${prefix}${i}.png`;
     arr.push({ imageFile, modelFile });
   }
   return arr;
