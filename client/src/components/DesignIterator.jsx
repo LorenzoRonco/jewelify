@@ -16,6 +16,111 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
+  // Mock AI prompt parser - extracts keywords from user prompt
+  function parseAiPrompt(prompt) {
+    const result = {};
+    const promptLower = prompt.toLowerCase();
+
+    // Material colors
+    const materialColors = {
+      gold: ['gold', 'golden', 'yellow'],
+      silver: ['silver', 'white metal', 'platinum-like'],
+      rose: ['rose', 'rose gold', 'copper', 'blush'],
+      platinum: ['platinum', 'white', 'cool']
+    };
+
+    for (const [color, keywords] of Object.entries(materialColors)) {
+      if (keywords.some(keyword => promptLower.includes(keyword))) {
+        result.materialColor = color;
+        break;
+      }
+    }
+
+    // Stone colors
+    const stoneColors = {
+      clear: ['clear', 'white', 'transparent', 'colorless', 'diamond'],
+      pink: ['pink', 'blush', 'rose quartz', 'morganite'],
+      blue: ['blue', 'sapphire', 'sky blue', 'deep blue'],
+      green: ['green', 'emerald', 'jade', 'light green'],
+      red: ['red', 'ruby', 'crimson', 'deep red']
+    };
+
+    for (const [color, keywords] of Object.entries(stoneColors)) {
+      if (keywords.some(keyword => promptLower.includes(keyword))) {
+        result.stoneColor = color;
+        break;
+      }
+    }
+
+    // Stone shapes
+    const shapes = {
+      brilliant: ['round', 'brilliant', 'classic', 'sparkly'],
+      diamond: ['square', 'cushion', 'asscher', 'angular', 'geometric'],
+      gem: ['oval', 'emerald cut', 'elongated', 'pear', 'teardrop']
+    };
+
+    for (const [shape, keywords] of Object.entries(shapes)) {
+      if (keywords.some(keyword => promptLower.includes(keyword))) {
+        result.stoneShape = shape;
+        break;
+      }
+    }
+
+    // Band designs
+    const bandDesigns = {
+      Classic: ['classic', 'traditional', 'timeless', 'simple', 'elegant'],
+      Knife: ['knife', 'sharp', 'thin', 'modern', 'sleek'],
+      Flat: ['flat', 'wide', 'bold', 'chunky', 'statement']
+    };
+
+    for (const [design, keywords] of Object.entries(bandDesigns)) {
+      if (keywords.some(keyword => promptLower.includes(keyword))) {
+        result.bandDesign = design;
+        break;
+      }
+    }
+
+    // Metal finishes
+    const finishes = {
+      polished: ['polished', 'shiny', 'bright', 'glossy', 'smooth'],
+      matte: ['matte', 'matt', 'dull', 'brushed'],
+      hammered: ['hammered', 'textured', 'rough', 'vintage', 'artisan']
+    };
+
+    for (const [finish, keywords] of Object.entries(finishes)) {
+      if (keywords.some(keyword => promptLower.includes(keyword))) {
+        result.metalFinish = finish;
+        break;
+      }
+    }
+
+    // Design styles
+    const designs = {
+      delicate: ['delicate', 'dainty', 'fine', 'subtle', 'minimal'],
+      geometric: ['geometric', 'angular', 'modern', 'contemporary', 'architectural'],
+      organic: ['organic', 'flowing', 'natural', 'wavy', 'curved'],
+      statement: ['statement', 'bold', 'dramatic', 'standout', 'eye-catching']
+    };
+
+    for (const [designStyle, keywords] of Object.entries(designs)) {
+      if (keywords.some(keyword => promptLower.includes(keyword))) {
+        result.design = designStyle;
+        break;
+      }
+    }
+
+    // Quality modifiers
+    if (promptLower.includes('high quality') || promptLower.includes('clarity') || promptLower.includes('flawless')) {
+      result.clarity = 0.85;
+      result.polish = 0.85;
+    } else if (promptLower.includes('vintage') || promptLower.includes('antique')) {
+      result.clarity = 0.6;
+      result.polish = 0.65;
+    }
+
+    return result;
+  }
+
   // If surveyAnswers is present, generate a random config (stoneColor from survey if present)
   function getRandomConfigFromSurvey(survey) {
     let stoneColor = 'clear';
@@ -307,10 +412,21 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     console.log("Recalculate with prompt:", aiPrompt);
 
+    // Parse the prompt to extract keywords
+    const parsedKeywords = parseAiPrompt(aiPrompt);
+    console.log("Parsed keywords:", parsedKeywords);
+
     setIsLoading(true);
     setLoadingMessage("Recalculating design...");
     setTimeout(() => {
       const newConfig = getRandomConfigFromSurvey(surveyAnswers);
+
+      // Apply parsed keywords to the new config ONLY if keywords were found
+      if (Object.keys(parsedKeywords).length > 0) {
+        Object.assign(newConfig, parsedKeywords);
+      }
+      // If no keywords found, use the completely random config as-is
+
       // Update bandPath and stonePath to match bandDesign and stoneShape
       let bandFile = "BAND_CLASSIC.glb";
       if (newConfig.bandDesign === "Knife") bandFile = "BAND_KNIFE.glb";
@@ -376,67 +492,115 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   // Applica cambiamenti simulati basati sul prompt AI
   const applyAiChanges = (part, prompt) => {
     const updates = {};
+    const parsedKeywords = parseAiPrompt(prompt);
 
     if (part === "stone") {
-      // Cambia shape della pietra
-      const shapes = ["brilliant", "diamond", "gem"];
-      const currentShape = config.stoneShape || "brilliant";
-      const availableShapes = shapes.filter(s => s !== currentShape);
-      const randomShape = availableShapes[Math.floor(Math.random() * availableShapes.length)];
+      // Controlla se ci sono keywords rilevanti per la stone
+      const relevantKeywords = ['stoneShape', 'stoneColor', 'clarity'];
+      const hasStoneKeywords = relevantKeywords.some(k => k in parsedKeywords);
 
-      console.log(`Changing stone shape from ${currentShape} to ${randomShape}`);
+      if (hasStoneKeywords) {
+        // Applica SOLO i cambiamenti estratti dal parsing
+        if (parsedKeywords.stoneShape && parsedKeywords.stoneShape !== config.stoneShape) {
+          handleConfigChange("stoneShape", parsedKeywords.stoneShape);
+        }
 
-      // Usa handleConfigChange per la stone shape (questo gestisce anche il modello 3D)
-      handleConfigChange("stoneShape", randomShape);
+        if (parsedKeywords.stoneColor && parsedKeywords.stoneColor !== config.stoneColor) {
+          updates.stoneColor = parsedKeywords.stoneColor;
+        }
 
-      // Cambia colore della pietra casualmente
-      const colors = ["clear", "pink", "blue", "green", "red"];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      if (randomColor !== config.stoneColor) {
-        updates.stoneColor = randomColor;
-      }
+        if (parsedKeywords.clarity && parsedKeywords.clarity !== config.clarity) {
+          updates.clarity = parsedKeywords.clarity;
+        }
+      } else {
+        // Fallback: genera a caso
+        const shapes = ["brilliant", "diamond", "gem"];
+        const currentShape = config.stoneShape || "brilliant";
+        const availableShapes = shapes.filter(s => s !== currentShape);
+        const randomShape = availableShapes[Math.floor(Math.random() * availableShapes.length)];
 
-      // Aumenta leggermente la clarity
-      const newClarity = Math.min(config.clarity + 0.1, 1);
-      if (newClarity !== config.clarity) {
-        updates.clarity = newClarity;
+        handleConfigChange("stoneShape", randomShape);
+
+        const colors = ["clear", "pink", "blue", "green", "red"];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        if (randomColor !== config.stoneColor) {
+          updates.stoneColor = randomColor;
+        }
+
+        const newClarity = Math.min(config.clarity + 0.1, 1);
+        if (newClarity !== config.clarity) {
+          updates.clarity = newClarity;
+        }
       }
 
       if (Object.keys(updates).length > 0) {
         handleInstantUpdates(updates, updateEstimates);
       }
     } else if (part === "band") {
-      // Cambia design della band
-      const designs = ["Classic", "Knife", "Flat"];
-      const currentDesign = config.bandDesign || "Classic";
-      const availableDesigns = designs.filter(d => d !== currentDesign);
-      const randomDesign = availableDesigns[Math.floor(Math.random() * availableDesigns.length)];
+      // Controlla se ci sono keywords rilevanti per la band
+      const relevantKeywords = ['bandDesign', 'metalFinish', 'polish'];
+      const hasBandKeywords = relevantKeywords.some(k => k in parsedKeywords);
 
-      console.log(`Changing band from ${currentDesign} to ${randomDesign}`);
+      if (hasBandKeywords) {
+        // Applica SOLO i cambiamenti estratti dal parsing
+        if (parsedKeywords.bandDesign && parsedKeywords.bandDesign !== config.bandDesign) {
+          handleConfigChange("bandDesign", parsedKeywords.bandDesign);
+        }
 
-      // Usa handleConfigChange per il bandDesign (questo farà gli aggiornamenti corretti)
-      handleConfigChange("bandDesign", randomDesign);
+        if (parsedKeywords.metalFinish && parsedKeywords.metalFinish !== config.metalFinish) {
+          updates.metalFinish = parsedKeywords.metalFinish;
+        }
 
-      // Aumenta il polish
-      const newPolish = Math.min(config.polish + 0.15, 1);
-      if (newPolish !== config.polish) {
-        handleInstantUpdate("polish", newPolish, updateEstimates);
+        if (parsedKeywords.polish && parsedKeywords.polish !== config.polish) {
+          updates.polish = parsedKeywords.polish;
+        }
+      } else {
+        // Fallback: genera a caso
+        const designs = ["Classic", "Knife", "Flat"];
+        const currentDesign = config.bandDesign || "Classic";
+        const availableDesigns = designs.filter(d => d !== currentDesign);
+        const randomDesign = availableDesigns[Math.floor(Math.random() * availableDesigns.length)];
+
+        handleConfigChange("bandDesign", randomDesign);
+
+        const newPolish = Math.min(config.polish + 0.15, 1);
+        if (newPolish !== config.polish) {
+          updates.polish = newPolish;
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        handleInstantUpdates(updates, updateEstimates);
       }
     } else if (part === "head") {
-      // Cambia il materialColor casualmente
-      const colors = ["gold", "silver", "rose", "platinum"];
-      const currentColor = config.materialColor || "gold";
-      const availableColors = colors.filter(c => c !== currentColor);
-      const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+      // Controlla se ci sono keywords rilevanti per la head (non metalFinish - quello è del band)
+      const relevantKeywords = ['materialColor', 'clarity'];
+      const hasHeadKeywords = relevantKeywords.some(k => k in parsedKeywords);
 
-      if (randomColor !== currentColor) {
-        updates.materialColor = randomColor;
-      }
+      if (hasHeadKeywords) {
+        // Applica SOLO i cambiamenti estratti dal parsing
+        if (parsedKeywords.materialColor && parsedKeywords.materialColor !== config.materialColor) {
+          updates.materialColor = parsedKeywords.materialColor;
+        }
 
-      // Aumenta clarity leggermente
-      const newClarity = Math.min(config.clarity + 0.05, 1);
-      if (newClarity !== config.clarity) {
-        updates.clarity = newClarity;
+        if (parsedKeywords.clarity && parsedKeywords.clarity !== config.clarity) {
+          updates.clarity = parsedKeywords.clarity;
+        }
+      } else {
+        // Fallback: genera a caso
+        const colors = ["gold", "silver", "rose", "platinum"];
+        const currentColor = config.materialColor || "gold";
+        const availableColors = colors.filter(c => c !== currentColor);
+        const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+
+        if (randomColor !== currentColor) {
+          updates.materialColor = randomColor;
+        }
+
+        const newClarity = Math.min(config.clarity + 0.05, 1);
+        if (newClarity !== config.clarity) {
+          updates.clarity = newClarity;
+        }
       }
 
       if (Object.keys(updates).length > 0) {
