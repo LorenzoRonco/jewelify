@@ -40,22 +40,8 @@ body {
   position: relative;
 }
 
-/* Position the main action button centered at the bottom */
-.survey-container > .btn-send {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 25px;
-  z-index: 20;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-  border-radius: 20px;
-}
-
 @media (max-width: 480px) {
-  .survey-container > .btn-send {
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 20px;
+  .survey-footer .btn-send {
     min-width: 120px;
   }
 }
@@ -172,14 +158,6 @@ body {
   border-color: #999;
 }
 
-.option-card.selected {
-  background: #333;
-  border-color: #333;
-  color: #fff;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  transform: translateY(-6px);
-}
-
 /* Style variant for inline smaller options in question cards */
 .question-card .option-card {
   min-height: 56px;
@@ -234,15 +212,27 @@ body {
 }
 
 .survey-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.7rem 0.8rem;
+  padding: 0.8rem 0.8rem;
   background: #fff;
   border-top: 1px solid #e0e0e0;
 }
 .survey-footer p {
   margin: 0;
+}
+
+/* Button inside footer */
+.survey-footer .btn-send {
+  display: inline-block;
+  min-width: 150px;
+  max-width: calc(100% - 48px);
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
 }
 
 .btn-send {
@@ -375,26 +365,28 @@ body {
 
 /* Responsive for tablets */
 @media (max-width: 1024px) {
+  .iterator-header {
+    padding: 1rem;
+  }
   .iterator-main {
     grid-template-columns: 1fr 300px;
   }
-
   .controls-section {
-    padding: 0.75rem;
+    padding: 0.8rem;
     gap: 1rem;
     max-height: 100vh;
   }
-
   .pricing-block {
     padding: 1rem;
   }
-
   .estimated-days {
     font-size: 1.2rem;
   }
-
   .live-price {
     font-size: 1.5rem;
+  }
+  .options-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -855,77 +847,74 @@ body {
   background: #555;
 }
 
-/* ===========================
-   RESPONSIVE DESIGN (Tablet)
-   =========================== */
-@media (max-width: 1024px) {
-  .iterator-header {
-    padding: 1rem;
-  }
+/* Tablet responsive rules consolidated above */
 
-  .controls-section {
-    padding: 0.8rem;
-  }
-
-  .options-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
+/* Mobile and small-height targets (merged rules to avoid duplication) */
+@media (max-width: 768px), (max-height: 600px) {
   .survey-step {
     padding: 1rem;
+    max-width: 100%;
   }
-
   .survey-subtitle {
     font-size: 1.1rem;
   }
-
   .options-grid {
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
   }
-
   .option-card {
     min-height: 140px;
     padding: 1rem;
   }
-
   .iterator-main {
     grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
   }
-
   .controls-section {
-    max-height: 40vh;
+    max-height: 50vh;
     border-left: none;
     border-top: 1px solid #e0e0e0;
   }
-
   .modal-content {
     max-width: 90%;
     padding: 1.5rem;
   }
-
   .modal-actions {
     grid-template-columns: 1fr;
   }
-}
-
-@media (max-height: 600px) {
-  .survey-main {
-    padding: 1rem;
+  .control-block select,
+  .control-block input[type="range"] {
+    min-height: 48px;
+    font-size: 1rem;
   }
-
-  .survey-step {
-    max-width: 100%;
+  .slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
   }
-
+  .slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
   .options-grid {
     gap: 0.8rem;
   }
+}
 
-  .option-card {
-    min-height: 120px;
-    padding: 1rem;
-  }
+/* Selected state accessibility fix (merged into one place) */
+.option-card.selected,
+.option-card.selected .option-label,
+.option-card.selected .option-description,
+.question-card .option-card.selected,
+.question-card .option-card.selected .option-label {
+  background: #333;
+  border-color: #333;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-6px);
+  opacity: 1;
+}
+
+/* Ensure labels inside selected option-cards inherit white explicitly (higher specificity) */
+.option-card.selected .option-label {
+  color: #fff;
 }

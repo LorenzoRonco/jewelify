@@ -308,14 +308,16 @@ const SetupSurvey = ({ onComplete }) => {
         {renderStep()}
       </main>
 
-      <button
-        className="btn-send"
-        onClick={handleNext}
-        disabled={!isAnswerSelected()}
-        aria-label={step === 2 ? "Generate Jewel" : "Next Step"}
-      >
-        {step === 2 ? "Generate Jewel" : "Next Step"}
-      </button>
+      <footer className="survey-footer">
+        <button
+          className="btn-send"
+          onClick={handleNext}
+          disabled={!isAnswerSelected()}
+          aria-label={step === 2 ? "Generate Jewel" : "Next Step"}
+        >
+          {step === 2 ? "Generate Jewel" : "Next Step"}
+        </button>
+      </footer>
     </div>
   );
 };
