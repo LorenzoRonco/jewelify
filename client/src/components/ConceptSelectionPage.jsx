@@ -17,7 +17,7 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
   const from = location?.state?.from || null;
 
   const handleSelect = (modelPath) => {
-    // Navigate to design and pass the modelPath and where we came from
+    // Navigate directly to designer with selected model
     navigate("/design", { state: { modelPath, from: 'concepts' } });
   };
 

@@ -6,6 +6,7 @@ import { HeaderProvider } from "./components/HeaderContext";
 import Navbar from "./components/Navbar";
 import SetupSurvey from "./components/SetupSurvey.jsx";
 import DesignIterator from "./components/DesignIterator.jsx";
+import GeneratingPage from "./components/GeneratingPage.jsx";
 import ConceptSelectionPage from "./components/ConceptSelectionPage.jsx";
 import InspirationPage from "./components/InspirationPage.jsx";
 import "./App.css"
@@ -16,7 +17,7 @@ function App() {
 
   const handleSurveyComplete = (answers) => {
     setSurveyAnswers(answers);
-    navigate('/concepts', { state: { from: 'survey' } });
+    navigate('/generating', { state: { from: 'survey' } });
   };
 
   const handleExitDesign = () => {
@@ -32,6 +33,7 @@ function App() {
         <Route path="/survey" element={<SetupSurvey onComplete={handleSurveyComplete} />} />
         <Route path="/concepts" element={<ConceptSelectionPage />} />
         <Route path="/inspiration/:category" element={<InspirationPage />} />
+        <Route path="/generating" element={<GeneratingPage />} />
         <Route path="/design" element={<DesignIterator surveyAnswers={surveyAnswers} onExit={handleExitDesign}/>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

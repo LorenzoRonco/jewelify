@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Canvas, useLoader } from "@react-three/fiber";
+import { Canvas, useLoader, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import * as THREE from "three";
@@ -79,7 +79,7 @@ const GLTFModel = ({ modelPath, scale = 1, materialColor, config }) => {
   }, [scene, materialColor, config?.polish, config?.stoneColor, config?.clarity]);
 
   // Usa direttamente primitive per renderizzare la scene
-  return <primitive object={scene} scale={scale} />;
+  return <primitive object={scene} scale={scale} position={[0, -0.5, 0]} />;
 };
 
 const JewelModel = ({
@@ -261,67 +261,380 @@ const JewelModel = ({
  * Main 3D rendering component with orbit controls and responsive sizing
  * Optimized for tablet touch interaction
  */
-const ThreeCanvas = ({ config = {}, isLoading = false }) => {
+const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo = false, canRedo = false, onRecalculate, onConfirmOrder, onPartClick }) => {
   const canvasRef = useRef();
-  const [zoomLevel, setZoomLevel] = useState(30);
+  const [zoomLevel, setZoomLevel] = useState(65);
   const MAX_ZOOM = 100;
+  const raycastingRef = useRef({ raycaster: new THREE.Raycaster(), mouse: new THREE.Vector2() });
+  const sceneRef = useRef();
+  const cameraRef = useRef();
+  const [hoveredPart, setHoveredPart] = useState(null);
+  const [isExploded, setIsExploded] = useState(false);
+  const meshesRef = useRef(new Map()); // Map per tracciare i materiali originali
+  const originalPositionsRef = useRef(new Map()); // Map per tracciare le posizioni originali
 
   // Combined ring models from local public folder
-  const bandPath = config.bandPath || "http://localhost:5173/models/ring/BAND_CLASSIC.glb";
-  const headPath = "http://localhost:5173/models/ring/HEAD_4PRONGS.glb";
-  const stonePath = config.stonePath || "http://localhost:5173/models/ring/STONE_BRILLIANT.glb";
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const bandPath = config.bandPath || `${baseUrl}/models/ring/BAND_CLASSIC.glb`;
+  const headPath = `${baseUrl}/models/ring/HEAD_4PRONGS.glb`;
+  const stonePath = config.stonePath || `${baseUrl}/models/ring/STONE_BRILLIANT.glb`;
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 2, MAX_ZOOM));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 2, 2));
 
+  // Funzione per applicare l'effetto esplosione
+  const applyExplosion = (explode) => {
+    if (!sceneRef.current) return;
+
+    const explosionDistance = 0.002; // Distanza molto piccola perché i modelli sono scalati 65x
+
+    sceneRef.current.traverse((obj) => {
+      if (obj.isMesh) {
+        const objectName = obj.name.toLowerCase();
+        let originalPos = originalPositionsRef.current.get(obj.name);
+
+        if (!originalPos) {
+          // Salva la posizione originale al primo accesso
+          originalPos = {
+            x: obj.position.x,
+            y: obj.position.y,
+            z: obj.position.z,
+          };
+          originalPositionsRef.current.set(obj.name, originalPos);
+          console.log(`Saved original position for ${obj.name}:`, originalPos);
+        }
+
+        if (explode) {
+          // Determina la direzione di separazione in base al tipo di pezzo
+          let offsetY = 0;
+
+          if (objectName.includes("stone") || objectName.includes("gem") || objectName.includes("brilliant") || objectName.includes("diamond")) {
+            // Stone: sposta verso l'alto (aumentato)
+            offsetY = explosionDistance * 3;
+          } else if (objectName.includes("head") || objectName.includes("prong")) {
+            // Head: sposta leggermente verso l'alto (meno della stone)
+            offsetY = explosionDistance;
+          } else if (objectName.includes("band") || objectName.includes("classic") || objectName.includes("knife") || objectName.includes("flat")) {
+            // Band: sposta verso il basso
+            offsetY = -explosionDistance;
+          }
+
+          obj.position.y = originalPos.y + offsetY;
+
+          console.log(`Exploding ${obj.name}: Y from ${originalPos.y.toFixed(5)} to ${obj.position.y.toFixed(5)} (offset: ${offsetY.toFixed(5)})`);
+        } else {
+          // Ritorna alla posizione originale
+          obj.position.x = originalPos.x;
+          obj.position.y = originalPos.y;
+          obj.position.z = originalPos.z;
+
+          console.log(`Collapsing ${obj.name}: returned to Y=${originalPos.y.toFixed(5)}`);
+        }
+      }
+    });
+  };
+
+  // Handle mouse move for hover detection
+  const handleCanvasMouseMove = (e) => {
+    if (!sceneRef.current || !cameraRef.current || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+
+    // Normalizza coordinate mouse
+    raycastingRef.current.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    raycastingRef.current.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Esegui raycasting
+    raycastingRef.current.raycaster.setFromCamera(raycastingRef.current.mouse, cameraRef.current);
+
+    // Raccogli tutti gli oggetti della scena
+    const allObjects = [];
+    sceneRef.current.traverse((obj) => {
+      if (obj.isMesh) {
+        allObjects.push(obj);
+      }
+    });
+
+    const intersects = raycastingRef.current.raycaster.intersectObjects(allObjects);
+
+    // Reset tutti i mesh al colore originale
+    meshesRef.current.forEach((originalMaterial, meshName) => {
+      const mesh = sceneRef.current.getObjectByName(meshName);
+      if (mesh && mesh.isMesh) {
+        mesh.material.emissive.setHex(0x000000);
+      }
+    });
+
+    let currentPart = null;
+    if (intersects.length > 0) {
+      // Mouse è sopra il modello - attiva esplosione
+      if (!isExploded) {
+        setIsExploded(true);
+        applyExplosion(true);
+      }
+
+      const hoveredObject = intersects[0].object;
+      const objectName = hoveredObject.name.toLowerCase();
+
+      // Determina quale pezzo è sotto il cursore
+      if (objectName.includes("band") || objectName.includes("classic") || objectName.includes("knife") || objectName.includes("flat")) {
+        currentPart = "band";
+      } else if (objectName.includes("head") || objectName.includes("prong")) {
+        currentPart = "head";
+      } else if (objectName.includes("stone") || objectName.includes("gem") || objectName.includes("brilliant") || objectName.includes("diamond")) {
+        currentPart = "stone";
+      }
+
+      // Evidenzia il mesh con emissive color
+      if (currentPart) {
+        hoveredObject.material.emissive.setHex(0x444444);
+        canvas.style.cursor = 'pointer';
+      } else {
+        canvas.style.cursor = 'default';
+      }
+    } else {
+      // Mouse NON è sopra il modello - disattiva esplosione
+      if (isExploded) {
+        setIsExploded(false);
+        applyExplosion(false);
+      }
+      canvas.style.cursor = 'default';
+    }
+
+    setHoveredPart(currentPart);
+  };
+
+  // Handle click on canvas
+  const handleCanvasClick = (e) => {
+    console.log("handleCanvasClick triggered");
+
+    if (!sceneRef.current || !cameraRef.current || isLoading) {
+      console.log("Missing refs:", { scene: !!sceneRef.current, camera: !!cameraRef.current, isLoading });
+      return;
+    }
+
+    if (!canvasRef.current) {
+      console.log("No canvas ref");
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+
+    console.log("Canvas clicked at:", e.clientX, e.clientY);
+
+    // Normalizza coordinate mouse rispetto al canvas
+    raycastingRef.current.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    raycastingRef.current.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    console.log("Normalized mouse:", raycastingRef.current.mouse);
+
+    // Esegui raycasting
+    raycastingRef.current.raycaster.setFromCamera(raycastingRef.current.mouse, cameraRef.current);
+
+    // Raccogli tutti gli oggetti della scena
+    const allObjects = [];
+    sceneRef.current.traverse((obj) => {
+      if (obj.isMesh) {
+        allObjects.push(obj);
+        console.log("Found mesh:", obj.name);
+      }
+    });
+
+    console.log("Total meshes:", allObjects.length);
+
+    const intersects = raycastingRef.current.raycaster.intersectObjects(allObjects);
+
+    console.log("Intersects:", intersects.length);
+
+    if (intersects.length > 0) {
+      const clickedObject = intersects[0].object;
+      const objectName = clickedObject.name.toLowerCase();
+
+      console.log("Clicked object:", clickedObject.name);
+
+      let partName = null;
+      // Riconosci i nomi dei mesh
+      if (objectName.includes("band") || objectName.includes("classic") || objectName.includes("knife") || objectName.includes("flat")) {
+        partName = "band";
+      } else if (objectName.includes("head") || objectName.includes("prong")) {
+        partName = "head";
+      } else if (objectName.includes("stone") || objectName.includes("gem") || objectName.includes("brilliant") || objectName.includes("diamond")) {
+        partName = "stone";
+      }
+
+      console.log("Part name:", partName);
+
+      if (partName && onPartClick) {
+        onPartClick(partName);
+      }
+    }
+  };
+
+  // Aggiungi event listener al canvas al mount
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleMouseLeave = () => {
+      console.log("Mouse left canvas");
+      setIsExploded(false);
+      applyExplosion(false);
+      canvas.style.cursor = 'default';
+    };
+
+    console.log("Attaching click and mousemove listeners to canvas");
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('mousemove', handleCanvasMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      canvas.removeEventListener('click', handleCanvasClick);
+      canvas.removeEventListener('mousemove', handleCanvasMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
+      console.log("Removing listeners from canvas");
+    };
+  }, [isLoading, onPartClick]);
+
   return (
     <div className="three-canvas-container">
-      {/* Zoom controls */}
+      {/* Undo/Redo controls - left side */}
       <div style={{
         position: 'absolute',
         top: '20px',
-        right: '20px',
+        left: '20px',
         zIndex: 10,
         display: 'flex',
-        flexDirection: 'column',
-        gap: '10px'
+        flexDirection: 'row',
+        gap: '8px',
+        alignItems: 'flex-start'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Undo"
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: canUndo ? 'white' : '#f0f0f0',
+              cursor: canUndo ? 'pointer' : 'not-allowed',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: canUndo ? 1 : 0.5
+            }}
+          >
+            ↶
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Undo</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="Redo"
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: canRedo ? 'white' : '#f0f0f0',
+              cursor: canRedo ? 'pointer' : 'not-allowed',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: canRedo ? 1 : 0.5
+            }}
+          >
+            ↷
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Redo</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={onRecalculate}
+            disabled={isLoading}
+            title="Recalculate"
+            style={{
+              width: '50px',
+              height: '50px',
+              fontSize: '20px',
+              borderRadius: '50%',
+              border: '2px solid #ddd',
+              background: isLoading ? '#f0f0f0' : 'white',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: isLoading ? 0.5 : 1
+            }}
+          >
+            ⟳
+          </button>
+          <span style={{
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            textAlign: 'center',
+            minWidth: '50px'
+          }}>Recalculate</span>
+        </div>
+      </div>
+
+
+      {/* Confirm Order button - top center */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 10
       }}>
         <button
-          onClick={handleZoomIn}
+          onClick={onConfirmOrder}
+          disabled={isLoading}
+          title="Confirm Order"
           style={{
-            width: '50px',
-            height: '50px',
-            fontSize: '24px',
-            borderRadius: '50%',
-            border: '2px solid #ddd',
-            background: 'white',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            padding: '12px 28px',
+            fontSize: '0.95rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            borderRadius: '6px',
+            border: 'none',
+            background: isLoading ? '#999' : '#000',
+            color: 'white',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            opacity: isLoading ? 0.6 : 1
           }}
         >
-          +
-        </button>
-        <button
-          onClick={handleZoomOut}
-          style={{
-            width: '50px',
-            height: '50px',
-            fontSize: '24px',
-            borderRadius: '50%',
-            border: '2px solid #ddd',
-            background: 'white',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-          }}
-        >
-          −
+          Confirm Order
         </button>
       </div>
+
       <Canvas
         ref={canvasRef}
         camera={{ position: [0, 0, 4], fov: 50 }}
         className="canvas-main"
         gl={{ antialias: true, alpha: true }}
+        onCreated={(state) => {
+          sceneRef.current = state.scene;
+          cameraRef.current = state.camera;
+          console.log("Canvas created, refs set");
+        }}
       >
         {/* HDRI Environment for realistic reflections */}
         <React.Suspense fallback={null}>
