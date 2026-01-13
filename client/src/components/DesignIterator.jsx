@@ -648,8 +648,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   React.useEffect(() => {
     setLeft(
-      <div>
-        <button className="back-btn btn-back" onClick={() => {
+        <button className="back-btn btn-back-small" onClick={() => {
           if (from === 'concepts') navigate('/concepts');
           else if (from === 'inspiration') navigate(-1);
           else if (from === 'survey') navigate('/survey', { state: { step: 2 } });
@@ -657,11 +656,10 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         }}>
           ← Back
         </button>
-      </div>
     );
 
     return () => setLeft(null);
-  }, [from]);
+  }, []);
 
   React.useEffect(() => {
     setRight(
