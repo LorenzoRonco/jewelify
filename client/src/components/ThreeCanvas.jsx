@@ -79,7 +79,7 @@ const GLTFModel = ({ modelPath, scale = 1, materialColor, config }) => {
   }, [scene, materialColor, config?.polish, config?.stoneColor, config?.clarity]);
 
   // Usa direttamente primitive per renderizzare la scene
-  return <primitive object={scene} scale={scale} position={[0, -0.5, 0]} />;
+  return <primitive object={scene} scale={scale} position={[0, -0.7, 0]} />;
 };
 
 const JewelModel = ({
@@ -272,6 +272,13 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
   const [isExploded, setIsExploded] = useState(false);
   const meshesRef = useRef(new Map()); // Map per tracciare i materiali originali
   const originalPositionsRef = useRef(new Map()); // Map per tracciare le posizioni originali
+  
+  // Drag and interaction state
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const clickTimeRef = useRef(0);
+  const lastClickRef = useRef(null);
+  const DOUBLE_CLICK_THRESHOLD = 300; // milliseconds
 
   // Combined ring models from local public folder
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -281,6 +288,15 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 2, MAX_ZOOM));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 2, 2));
+
+  // Auto-reassemble ring when config changes (user modifies an element)
+  useEffect(() => {
+    if (isExploded) {
+      console.log("Config changed - auto-reassembling ring");
+      setIsExploded(false);
+      applyExplosion(false);
+    }
+  }, [config?.materialColor, config?.stoneColor, config?.polish, config?.clarity, config?.bandPath, config?.stonePath]);
 
   // Funzione per applicare l'effetto esplosione
   const applyExplosion = (explode) => {
@@ -338,6 +354,16 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
   const handleCanvasMouseMove = (e) => {
     if (!sceneRef.current || !cameraRef.current || !canvasRef.current) return;
 
+    // If dragging, update model position instead of hovering
+    if (isDragging) {
+      const deltaX = e.clientX - dragStartRef.current.x;
+      const deltaY = e.clientY - dragStartRef.current.y;
+      
+      // Move camera/orbit controls based on drag
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      return;
+    }
+
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
 
@@ -368,12 +394,6 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
 
     let currentPart = null;
     if (intersects.length > 0) {
-      // Mouse è sopra il modello - attiva esplosione
-      if (!isExploded) {
-        setIsExploded(true);
-        applyExplosion(true);
-      }
-
       const hoveredObject = intersects[0].object;
       const objectName = hoveredObject.name.toLowerCase();
 
@@ -386,19 +406,13 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
         currentPart = "stone";
       }
 
-      // Evidenzia il mesh con emissive color
-      if (currentPart) {
+      // Evidenzia il mesh con emissive color quando esploso
+      if (currentPart && isExploded) {
         hoveredObject.material.emissive.setHex(0x444444);
-        canvas.style.cursor = 'pointer';
-      } else {
-        canvas.style.cursor = 'default';
       }
+      
+      canvas.style.cursor = isExploded ? 'pointer' : 'grab';
     } else {
-      // Mouse NON è sopra il modello - disattiva esplosione
-      if (isExploded) {
-        setIsExploded(false);
-        applyExplosion(false);
-      }
       canvas.style.cursor = 'default';
     }
 
@@ -466,10 +480,30 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
 
       console.log("Part name:", partName);
 
-      if (partName && onPartClick) {
+      // Single click: open ring and allow modification
+      if (!isExploded) {
+        console.log("Single-click detected - exploding ring");
+        setIsExploded(true);
+        applyExplosion(true);
+      } else if (partName && onPartClick) {
+        // If ring is already open, handle part selection
+        console.log("Part clicked while ring is open:", partName);
         onPartClick(partName);
       }
     }
+  };
+
+  // Handle mouse down for drag start
+  const handleCanvasMouseDown = (e) => {
+    setIsDragging(true);
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    console.log("Mouse down - drag started");
+  };
+
+  // Handle mouse up for drag end
+  const handleCanvasMouseUp = (e) => {
+    setIsDragging(false);
+    console.log("Mouse up - drag ended");
   };
 
   // Aggiungi event listener al canvas al mount
@@ -479,23 +513,26 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
 
     const handleMouseLeave = () => {
       console.log("Mouse left canvas");
-      setIsExploded(false);
-      applyExplosion(false);
+      setIsDragging(false);
       canvas.style.cursor = 'default';
     };
 
     console.log("Attaching click and mousemove listeners to canvas");
     canvas.addEventListener('click', handleCanvasClick);
     canvas.addEventListener('mousemove', handleCanvasMouseMove);
+    canvas.addEventListener('mousedown', handleCanvasMouseDown);
+    canvas.addEventListener('mouseup', handleCanvasMouseUp);
     canvas.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
       canvas.removeEventListener('click', handleCanvasClick);
       canvas.removeEventListener('mousemove', handleCanvasMouseMove);
+      canvas.removeEventListener('mousedown', handleCanvasMouseDown);
+      canvas.removeEventListener('mouseup', handleCanvasMouseUp);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
       console.log("Removing listeners from canvas");
     };
-  }, [isLoading, onPartClick]);
+  }, [isLoading, onPartClick, isExploded, isDragging]);
 
   return (
     <div className="three-canvas-container">
@@ -602,27 +639,55 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
         transform: 'translateX(-50%)',
         zIndex: 10
       }}>
-        <button
-          onClick={onConfirmOrder}
-          disabled={isLoading}
-          title="Confirm Order"
-          style={{
-            padding: '12px 28px',
-            fontSize: '0.95rem',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            borderRadius: '6px',
-            border: 'none',
-            background: isLoading ? '#999' : '#000',
-            color: 'white',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-            opacity: isLoading ? 0.6 : 1
-          }}
-        >
-          Confirm Order
-        </button>
+        {isExploded ? (
+          <button
+            onClick={() => {
+              console.log("Reassemble button clicked");
+              setIsExploded(false);
+              applyExplosion(false);
+            }}
+            disabled={isLoading}
+            title="Reassemble Ring"
+            style={{
+              padding: '12px 28px',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              borderRadius: '6px',
+              border: 'none',
+              background: isLoading ? '#999' : '#ff6b6b',
+              color: 'white',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: isLoading ? 0.6 : 1
+            }}
+          >
+            Reassemble Ring
+          </button>
+        ) : (
+          <button
+            onClick={onConfirmOrder}
+            disabled={isLoading}
+            title="Confirm Order"
+            style={{
+              padding: '12px 28px',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              borderRadius: '6px',
+              border: 'none',
+              background: isLoading ? '#999' : '#000',
+              color: 'white',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              opacity: isLoading ? 0.6 : 1
+            }}
+          >
+            Confirm Order
+          </button>
+        )}
       </div>
 
       <Canvas
