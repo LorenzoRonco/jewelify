@@ -105,8 +105,9 @@ body {
 }
 
 .survey-step {
-  width: calc(100%);
+  width: calc(100% - 2rem);
   max-width: 1200px;
+  padding: 0 1rem;
 }
 
 .survey-step h2 {

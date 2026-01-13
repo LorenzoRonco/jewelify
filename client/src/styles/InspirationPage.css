@@ -1,13 +1,14 @@
 .inspiration-page {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
-  padding: 24px;
+  padding: 16px;
   color: #333;
 }
 
 .inspiration-main {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 0;
+  padding: 16px;
 }
 
 .btn-back-small {
@@ -26,23 +27,24 @@
 .inspiration-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  column-gap: 32px;
-  row-gap: 48px; /* larger vertical spacing between rows */
+  column-gap: 28px;
+  row-gap: 32px; /* slightly tighter vertical spacing */
   width: 100%;
-  padding: 0 32px; /* horizontal padding so grid fills viewport */
+  padding: 16px;
   box-sizing: border-box;
-  margin: 48px auto;
+  margin: 24px auto;
+  justify-items: center;
 }
 
 .inspiration-tile {
   background: white;
   border-radius: 6px;
-  padding: 6px; /* small inner padding so images don't touch edges */
+  padding: 10px; /* uniform inner padding to match page spacing */
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
   cursor: pointer;
   overflow: hidden;
   aspect-ratio: 1 / 1;
-  min-height: 280px; /* increased for larger tiles */
+  min-height: 220px; /* smaller tiles for denser grid */
   display: flex; /* center contents to avoid overflow cropping */
   align-items: center;
   justify-content: center;
@@ -90,10 +92,10 @@
   .inspiration-grid {
     grid-template-columns: repeat(2, 1fr);
     column-gap: 24px;
-    row-gap: 32px;
+    row-gap: 24px;
   }
   .inspiration-tile {
-    min-height: 240px;
+    min-height: 180px;
   }
 }
 
@@ -101,10 +103,10 @@
   .inspiration-grid {
     grid-template-columns: 1fr;
     column-gap: 16px;
-    row-gap: 20px;
+    row-gap: 16px;
     padding: 0 16px;
   }
   .inspiration-tile {
-    min-height: 180px;
+    min-height: 150px;
   }
 }
