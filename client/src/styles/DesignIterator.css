@@ -246,3 +246,13 @@
 .ai-prompt-input::placeholder {
   color: #aaa;
 }
+/* Footer styling for DesignIterator */
+.design-iterator .home-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  margin: 0;
+  z-index: 100;
+}
