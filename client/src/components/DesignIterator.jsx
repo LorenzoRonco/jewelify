@@ -767,7 +767,6 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
             onConfirmOrder={handleConfirmOrder}
             onPartClick={handlePartClick}
           />
-          <div className="design-feedback">It's the one!</div>
         </section>
 
         {/* Right side: Controls */}
@@ -984,6 +983,10 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
           </div>
         </>
       )}
+
+      <footer className="home-footer">
+        <p>&copy; 2025 Jewelify - Premium Custom Jewelry Design</p>
+      </footer>
     </div>
   );
 };
