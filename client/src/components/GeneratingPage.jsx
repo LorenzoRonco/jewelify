@@ -59,7 +59,7 @@ export default function GeneratingPage() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      navigate("/concepts", { state: location.state, replace: true });
+      navigate("/concepts", { state: { ...location.state, from: "survey" }, replace: true });
     }, totalDuration);
     return () => clearTimeout(t);
   }, [navigate, location.state, totalDuration]);

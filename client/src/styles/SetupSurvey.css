@@ -213,6 +213,13 @@ body {
   text-align: center;
   font-weight: 450;
   font-size: 1.3rem;
+  /* Smoothly transition text color so it changes together with the card background */
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+/* Also transition description color to keep visual consistency */
+.option-description {
+  transition: color 0.3s ease;
 }
 
 .survey-footer {
@@ -896,12 +903,15 @@ body {
 }
 
 /* Selected state accessibility fix (merged into one place) */
+/* Put transitions on the card itself and apply the color there so the
+   background and text color animate together and stay in sync. */
+.option-card {
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease,
+    transform 0.3s ease, border-color 0.3s ease;
+}
 .option-card.selected,
-.option-card.selected .option-label,
-.option-card.selected .option-description,
-.question-card .option-card.selected,
-.question-card .option-card.selected .option-label {
-  background: #333;
+.question-card .option-card.selected {
+  background-color: #333;
   border-color: #333;
   color: #f0f0f0;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);

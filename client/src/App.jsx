@@ -17,7 +17,7 @@ function App() {
 
   const handleSurveyComplete = (answers) => {
     setSurveyAnswers(answers);
-    navigate('/generating', { state: { from: 'survey' } });
+    navigate('/generating', { state: { from: 'survey', surveyAnswers: answers } });
   };
 
   const handleExitDesign = () => {
@@ -31,7 +31,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home onStartDesign={() => navigate('/survey')} />} />
         <Route path="/survey" element={<SetupSurvey onComplete={handleSurveyComplete} />} />
-        <Route path="/concepts" element={<ConceptSelectionPage />} />
+        <Route path="/concepts" element={<ConceptSelectionPage surveyAnswers={surveyAnswers} />} />
         <Route path="/inspiration/:category" element={<InspirationPage />} />
         <Route path="/generating" element={<GeneratingPage />} />
         <Route path="/design" element={<DesignIterator surveyAnswers={surveyAnswers} onExit={handleExitDesign}/>} />

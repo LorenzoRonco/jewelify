@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router";
 import "../styles/SetupSurvey.css";
 import { useHeader } from "./HeaderContext";
+import { deriveConfigFromSurveyAnswers } from "../utils/surveyMapping";
 import ringImg from "../../images/ring.png";
 import braceletImg from "../../images/bracelet.png";
 import necklaceImg from "../../images/necklace.png";
@@ -169,43 +170,23 @@ const SetupSurvey = ({ onComplete }) => {
   };
 
 
-  // Utility: pick random from array
-  function pickRandom(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  // Map survey answer to stone color
-  function getStoneColorFromFavoriteColors(fav) {
-    switch (fav) {
-      case 'warm': return 'red';
-      case 'cool': return 'blue';
-      case 'neutral': return 'clear';
-      case 'vibrant': return 'pink';
-      default: return pickRandom(['clear', 'pink', 'blue', 'green', 'red']);
-    }
-  }
-
   const handleNext = () => {
     if (step === 1) {
       setStep(2);
       return;
     }
 
-    // On step 2: generate random config for DesignIterator
-    const stoneColor = getStoneColorFromFavoriteColors(answers.survey.q2);
-    const config = {
-      design: pickRandom(['geometric', 'organic', 'delicate', 'statement']),
-      material: pickRandom(['palladium', 'gold', 'silver', 'platinum', 'rose']),
-      style: pickRandom(['pavé', 'solitaire', 'halo', 'vintage']),
-      materialColor: pickRandom(['gold', 'silver', 'rose', 'platinum']),
-      metalFinish: pickRandom(['hammered', 'polished', 'matte']),
-      stoneColor,
-      polish: Math.round((Math.random() * 0.6 + 0.3) * 10) / 10, // 0.3-0.9
-      clarity: Math.round((Math.random() * 0.6 + 0.3) * 10) / 10, // 0.3-0.9
-      bandDesign: pickRandom(['Classic', 'Knife', 'Flat']),
-      stoneShape: pickRandom(['brilliant', 'diamond', 'gem']),
-    };
-    onComplete(config);
+    // On step 2: deterministically map answers to a jewel config
+    const config = deriveConfigFromSurveyAnswers({
+      category: answers.category,
+      survey: answers.survey,
+    });
+
+    onComplete({
+      category: answers.category,
+      survey: answers.survey,
+      config,
+    });
   };
 
   const handleBack = () => {
