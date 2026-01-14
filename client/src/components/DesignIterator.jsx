@@ -36,13 +36,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       }
     }
 
-    // Stone colors
+    // Stone colors (removed 'white' and 'platinum' to avoid conflicts with metal colors)
     const stoneColors = {
-      clear: ['clear', 'white', 'transparent', 'colorless', 'diamond'],
-      pink: ['pink', 'blush', 'rose quartz', 'morganite'],
-      blue: ['blue', 'sapphire', 'sky blue', 'deep blue'],
-      green: ['green', 'emerald', 'jade', 'light green'],
-      red: ['red', 'ruby', 'crimson', 'deep red']
+      clear: ['clear', 'transparent', 'colorless', 'diamond', 'brilliant'],
+      pink: ['pink', 'blush', 'rose quartz', 'morganite', 'coral'],
+      blue: ['blue', 'sapphire', 'sky blue', 'deep blue', 'aqua'],
+      green: ['green', 'emerald', 'jade', 'light green', 'peridot'],
+      red: ['red', 'ruby', 'crimson', 'deep red', 'garnet']
     };
 
     for (const [color, keywords] of Object.entries(stoneColors)) {
@@ -52,10 +52,10 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       }
     }
 
-    // Stone shapes
+    // Stone shapes (removed overlapping keywords with band designs)
     const shapes = {
-      brilliant: ['round', 'brilliant', 'classic', 'sparkly'],
-      diamond: ['square', 'cushion', 'asscher', 'angular', 'geometric'],
+      brilliant: ['round', 'brilliant', 'sparkly', 'circular'],
+      diamond: ['square', 'cushion', 'asscher', 'angular'],
       gem: ['oval', 'emerald cut', 'elongated', 'pear', 'teardrop']
     };
 
@@ -66,11 +66,11 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       }
     }
 
-    // Band designs
+    // Band designs (use more specific keywords to avoid conflicts)
     const bandDesigns = {
-      Classic: ['classic', 'traditional', 'timeless', 'simple', 'elegant'],
-      Knife: ['knife', 'sharp', 'thin', 'modern', 'sleek'],
-      Flat: ['flat', 'wide', 'bold', 'chunky', 'statement']
+      Classic: ['classic band', 'traditional band', 'timeless', 'simple band'],
+      Knife: ['knife', 'knife edge', 'sharp edge', 'thin band', 'sleek band'],
+      Flat: ['flat band', 'wide band', 'chunky band', 'thick band']
     };
 
     for (const [design, keywords] of Object.entries(bandDesigns)) {
@@ -417,7 +417,12 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     console.log("Parsed keywords:", parsedKeywords);
 
     setIsLoading(true);
-    setLoadingMessage("Recalculating design...");
+    setLoadingMessage("Reshaping metal...");
+    setShowRecalculateModal(false); // Close modal immediately
+
+    // Tempo di attesa casuale da 2 a 4 secondi
+    const delay = 2000 + Math.random() * 2000;
+
     setTimeout(() => {
       const newConfig = getRandomConfigFromSurvey(surveyAnswers);
 
@@ -434,6 +439,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       let stoneFile = "STONE_BRILLIANT.glb";
       if (newConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
       if (newConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
       const fullConfig = {
         ...newConfig,
         bandPath: `${baseUrl}/models/ring/${bandFile}`,
@@ -445,9 +451,8 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       setHistoryState({ history: [fullConfig], historyIndex: 0 });
       setIsLoading(false);
       setLoadingMessage("");
-      setShowRecalculateModal(false);
       setAiPrompt("");
-    }, 500);
+    }, delay);
   };
 
   // Confirm order - show safety confirmation modal
@@ -482,17 +487,61 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     console.log(`AI Prompt for ${selectedPart}:`, aiPrompt);
 
-    // Applica cambiamenti simulati in base al pezzo selezionato
-    applyAiChanges(selectedPart, aiPrompt);
-
-    setAiPrompt("");
+    // Chiudi il modale
     setSelectedPart(null);
+
+    // Mostra loading popup con messaggio personalizzato
+    const messages = {
+      stone: "Crafting the perfect gemstone...",
+      head: "Perfecting the setting...",
+      band: "Shaping the band..."
+    };
+    const message = messages[selectedPart] || "Customizing...";
+    setIsLoading(true);
+    setLoadingMessage(message);
+
+    // Tempo di attesa casuale da 1 a 3 secondi
+    const delay = 1000 + Math.random() * 2000;
+
+    // Applica i cambiamenti dopo il delay
+    setTimeout(() => {
+      applyAiChanges(selectedPart, aiPrompt);
+      setAiPrompt("");
+      setIsLoading(false);
+      setLoadingMessage("");
+    }, delay);
   };
 
   // Applica cambiamenti simulati basati sul prompt AI
   const applyAiChanges = (part, prompt) => {
     const updates = {};
-    const parsedKeywords = parseAiPrompt(prompt);
+    const allParsedKeywords = parseAiPrompt(prompt);
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
+    // Filtra le keywords in base alla parte selezionata
+    // Questo evita che keywords non rilevanti influenzino altre parti
+    let parsedKeywords = {};
+
+    if (part === "stone") {
+      // Solo keywords rilevanti per la stone
+      if (allParsedKeywords.stoneShape) parsedKeywords.stoneShape = allParsedKeywords.stoneShape;
+      if (allParsedKeywords.stoneColor) parsedKeywords.stoneColor = allParsedKeywords.stoneColor;
+      if (allParsedKeywords.clarity) parsedKeywords.clarity = allParsedKeywords.clarity;
+    } else if (part === "band") {
+      // Solo keywords rilevanti per il band (incluso colore metallo -> bandMaterialColor)
+      if (allParsedKeywords.bandDesign) parsedKeywords.bandDesign = allParsedKeywords.bandDesign;
+      if (allParsedKeywords.metalFinish) parsedKeywords.metalFinish = allParsedKeywords.metalFinish;
+      if (allParsedKeywords.polish) parsedKeywords.polish = allParsedKeywords.polish;
+      // Il colore del metallo per il band viene salvato come bandMaterialColor
+      if (allParsedKeywords.materialColor) parsedKeywords.bandMaterialColor = allParsedKeywords.materialColor;
+    } else if (part === "head") {
+      // Solo keywords rilevanti per la head
+      if (allParsedKeywords.materialColor) parsedKeywords.materialColor = allParsedKeywords.materialColor;
+      // clarity è condiviso tra head e stone, ma lo includiamo per head
+      if (allParsedKeywords.clarity) parsedKeywords.clarity = allParsedKeywords.clarity;
+    }
+
+    console.log(`Applying changes for ${part}:`, parsedKeywords);
 
     if (part === "stone") {
       // Controlla se ci sono keywords rilevanti per la stone
@@ -502,7 +551,12 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       if (hasStoneKeywords) {
         // Applica SOLO i cambiamenti estratti dal parsing
         if (parsedKeywords.stoneShape && parsedKeywords.stoneShape !== config.stoneShape) {
-          handleConfigChange("stoneShape", parsedKeywords.stoneShape);
+          updates.stoneShape = parsedKeywords.stoneShape;
+          // Aggiorna anche stonePath per caricare il modello 3D corretto
+          let stoneFile = "STONE_BRILLIANT.glb";
+          if (parsedKeywords.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
+          if (parsedKeywords.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
+          updates.stonePath = `${baseUrl}/models/ring/${stoneFile}`;
         }
 
         if (parsedKeywords.stoneColor && parsedKeywords.stoneColor !== config.stoneColor) {
@@ -519,32 +573,39 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         const availableShapes = shapes.filter(s => s !== currentShape);
         const randomShape = availableShapes[Math.floor(Math.random() * availableShapes.length)];
 
-        handleConfigChange("stoneShape", randomShape);
+        updates.stoneShape = randomShape;
+        // Aggiorna anche stonePath per caricare il modello 3D corretto
+        let stoneFile = "STONE_BRILLIANT.glb";
+        if (randomShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
+        if (randomShape === "gem") stoneFile = "STONE_GEM.glb";
+        updates.stonePath = `${baseUrl}/models/ring/${stoneFile}`;
 
         const colors = ["clear", "pink", "blue", "green", "red"];
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
-        if (randomColor !== config.stoneColor) {
-          updates.stoneColor = randomColor;
-        }
+        const currentColor = config.stoneColor || "clear";
+        const availableColors = colors.filter(c => c !== currentColor);
+        updates.stoneColor = availableColors[Math.floor(Math.random() * availableColors.length)];
 
         const newClarity = Math.min(config.clarity + 0.1, 1);
-        if (newClarity !== config.clarity) {
-          updates.clarity = newClarity;
-        }
+        updates.clarity = newClarity;
       }
 
-      if (Object.keys(updates).length > 0) {
-        handleInstantUpdates(updates, updateEstimates);
-      }
+      // Sempre applica gli updates
+      handleInstantUpdates(updates, updateEstimates);
     } else if (part === "band") {
-      // Controlla se ci sono keywords rilevanti per la band
-      const relevantKeywords = ['bandDesign', 'metalFinish', 'polish'];
+      // Controlla se ci sono keywords rilevanti per la band (incluso bandMaterialColor per il colore)
+      const relevantKeywords = ['bandDesign', 'metalFinish', 'polish', 'bandMaterialColor'];
       const hasBandKeywords = relevantKeywords.some(k => k in parsedKeywords);
 
       if (hasBandKeywords) {
         // Applica SOLO i cambiamenti estratti dal parsing
         if (parsedKeywords.bandDesign && parsedKeywords.bandDesign !== config.bandDesign) {
-          handleConfigChange("bandDesign", parsedKeywords.bandDesign);
+          // bandDesign è un instant update, non richiede server
+          updates.bandDesign = parsedKeywords.bandDesign;
+          // Aggiorna anche bandPath per caricare il modello 3D corretto
+          let bandFile = "BAND_CLASSIC.glb";
+          if (parsedKeywords.bandDesign === "Knife") bandFile = "BAND_KNIFE.glb";
+          if (parsedKeywords.bandDesign === "Flat") bandFile = "BAND_FLAT.glb";
+          updates.bandPath = `${baseUrl}/models/ring/${bandFile}`;
         }
 
         if (parsedKeywords.metalFinish && parsedKeywords.metalFinish !== config.metalFinish) {
@@ -554,24 +615,44 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         if (parsedKeywords.polish && parsedKeywords.polish !== config.polish) {
           updates.polish = parsedKeywords.polish;
         }
+
+        // Applica colore metallo per il band (separato dalla head)
+        if (parsedKeywords.bandMaterialColor && parsedKeywords.bandMaterialColor !== config.bandMaterialColor) {
+          updates.bandMaterialColor = parsedKeywords.bandMaterialColor;
+        }
       } else {
         // Fallback: genera a caso
         const designs = ["Classic", "Knife", "Flat"];
         const currentDesign = config.bandDesign || "Classic";
         const availableDesigns = designs.filter(d => d !== currentDesign);
-        const randomDesign = availableDesigns[Math.floor(Math.random() * availableDesigns.length)];
-
-        handleConfigChange("bandDesign", randomDesign);
-
-        const newPolish = Math.min(config.polish + 0.15, 1);
-        if (newPolish !== config.polish) {
-          updates.polish = newPolish;
+        let randomDesign;
+        if (availableDesigns.length > 0) {
+          randomDesign = availableDesigns[Math.floor(Math.random() * availableDesigns.length)];
+        } else {
+          // Se non ci sono altri designs, prendi uno random
+          randomDesign = designs[Math.floor(Math.random() * designs.length)];
         }
+        updates.bandDesign = randomDesign;
+        // Aggiorna anche bandPath per caricare il modello 3D corretto
+        let bandFile = "BAND_CLASSIC.glb";
+        if (randomDesign === "Knife") bandFile = "BAND_KNIFE.glb";
+        if (randomDesign === "Flat") bandFile = "BAND_FLAT.glb";
+        updates.bandPath = `${baseUrl}/models/ring/${bandFile}`;
+
+        const finishes = ["polished", "matte", "hammered"];
+        const currentFinish = config.metalFinish || "polished";
+        const availableFinishes = finishes.filter(f => f !== currentFinish);
+        updates.metalFinish = availableFinishes[Math.floor(Math.random() * availableFinishes.length)];
+
+        // Fallback: genera colore random per il band
+        const colors = ["gold", "silver", "rose", "platinum"];
+        const currentBandColor = config.bandMaterialColor || config.materialColor || "gold";
+        const availableBandColors = colors.filter(c => c !== currentBandColor);
+        updates.bandMaterialColor = availableBandColors[Math.floor(Math.random() * availableBandColors.length)];
       }
 
-      if (Object.keys(updates).length > 0) {
-        handleInstantUpdates(updates, updateEstimates);
-      }
+      // Sempre applica gli updates
+      handleInstantUpdates(updates, updateEstimates);
     } else if (part === "head") {
       // Controlla se ci sono keywords rilevanti per la head (non metalFinish - quello è del band)
       const relevantKeywords = ['materialColor', 'clarity'];
@@ -591,21 +672,14 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         const colors = ["gold", "silver", "rose", "platinum"];
         const currentColor = config.materialColor || "gold";
         const availableColors = colors.filter(c => c !== currentColor);
-        const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)];
-
-        if (randomColor !== currentColor) {
-          updates.materialColor = randomColor;
-        }
+        updates.materialColor = availableColors[Math.floor(Math.random() * availableColors.length)];
 
         const newClarity = Math.min(config.clarity + 0.05, 1);
-        if (newClarity !== config.clarity) {
-          updates.clarity = newClarity;
-        }
+        updates.clarity = newClarity;
       }
 
-      if (Object.keys(updates).length > 0) {
-        handleInstantUpdates(updates, updateEstimates);
-      }
+      // Sempre applica gli updates
+      handleInstantUpdates(updates, updateEstimates);
     }
   };
 
@@ -648,14 +722,14 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   React.useEffect(() => {
     setLeft(
-        <button className="back-btn btn-back-small" onClick={() => {
-          if (from === 'concepts') navigate('/concepts');
-          else if (from === 'inspiration') navigate(-1);
-          else if (from === 'survey') navigate('/survey', { state: { step: 2 } });
-          else navigate('/concepts');
-        }}>
-          ← Back
-        </button>
+      <button className="back-btn btn-back-small" onClick={() => {
+        if (from === 'concepts') navigate('/concepts');
+        else if (from === 'inspiration') navigate(-1);
+        else if (from === 'survey') navigate('/survey', { state: { step: 2 } });
+        else navigate('/concepts');
+      }}>
+        ← Back
+      </button>
     );
 
     return () => setLeft(null);

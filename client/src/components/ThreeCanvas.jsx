@@ -272,7 +272,7 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
   const [isExploded, setIsExploded] = useState(false);
   const meshesRef = useRef(new Map()); // Map per tracciare i materiali originali
   const originalPositionsRef = useRef(new Map()); // Map per tracciare le posizioni originali
-  
+
   // Drag and interaction state
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
@@ -296,7 +296,7 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
       setIsExploded(false);
       applyExplosion(false);
     }
-  }, [config?.materialColor, config?.stoneColor, config?.polish, config?.clarity, config?.bandPath, config?.stonePath]);
+  }, [config?.materialColor, config?.bandMaterialColor, config?.stoneColor, config?.polish, config?.clarity, config?.bandPath, config?.stonePath]);
 
   // Funzione per applicare l'effetto esplosione
   const applyExplosion = (explode) => {
@@ -358,7 +358,7 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
     if (isDragging) {
       const deltaX = e.clientX - dragStartRef.current.x;
       const deltaY = e.clientY - dragStartRef.current.y;
-      
+
       // Move camera/orbit controls based on drag
       dragStartRef.current = { x: e.clientX, y: e.clientY };
       return;
@@ -410,7 +410,7 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
       if (currentPart && isExploded) {
         hoveredObject.material.emissive.setHex(0x444444);
       }
-      
+
       canvas.style.cursor = isExploded ? 'pointer' : 'grab';
     } else {
       canvas.style.cursor = 'default';
@@ -555,13 +555,19 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
             style={{
               width: '50px',
               height: '50px',
-              fontSize: '24px',
-              borderRadius: '50%',
+              fontSize: '28px',
+              lineHeight: '50px',
+              padding: '0',
+              margin: '0',
               border: '2px solid #ddd',
+              borderRadius: '50%',
               background: canUndo ? 'white' : '#f0f0f0',
               cursor: canUndo ? 'pointer' : 'not-allowed',
               boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              opacity: canUndo ? 1 : 0.5
+              opacity: canUndo ? 1 : 0.5,
+              textAlign: 'center',
+              verticalAlign: 'middle',
+              fontFamily: 'system-ui, -apple-system, sans-serif'
             }}
           >
             ↶
@@ -582,13 +588,19 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
             style={{
               width: '50px',
               height: '50px',
-              fontSize: '24px',
-              borderRadius: '50%',
+              fontSize: '28px',
+              lineHeight: '50px',
+              padding: '0',
+              margin: '0',
               border: '2px solid #ddd',
+              borderRadius: '50%',
               background: canRedo ? 'white' : '#f0f0f0',
               cursor: canRedo ? 'pointer' : 'not-allowed',
               boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              opacity: canRedo ? 1 : 0.5
+              opacity: canRedo ? 1 : 0.5,
+              textAlign: 'center',
+              verticalAlign: 'middle',
+              fontFamily: 'system-ui, -apple-system, sans-serif'
             }}
           >
             ↷
@@ -713,7 +725,7 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
 
         {/* Render combined ring model */}
         <React.Suspense fallback={null}>
-          <GLTFModel modelPath={bandPath} scale={zoomLevel} materialColor={config.materialColor} config={config} />
+          <GLTFModel modelPath={bandPath} scale={zoomLevel} materialColor={config.bandMaterialColor || config.materialColor} config={config} />
           <GLTFModel modelPath={headPath} scale={zoomLevel} materialColor={config.materialColor} config={config} />
           <GLTFModel modelPath={stonePath} scale={zoomLevel} config={config} />
         </React.Suspense>
