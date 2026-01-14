@@ -57,10 +57,10 @@ const SetupSurvey = ({ onComplete }) => {
       id: "q4",
       label: "What color of metal do they most frequently wear?",
       options: [
-        { id: "yellow", label: "Yellow", img: "q4.1.png" },
+        { id: "yellow", label: "Yellow", img: "q4.4.png" },
         { id: "white", label: "White / Silver", img: "q4.2.png" },
         { id: "pink", label: "Pink / Red", img: "q4.3.png" },
-        { id: "mixed", label: "Mix of colors", img: "q4.4.png" },
+        { id: "mixed", label: "Mix of colors", img: "q4.1.png" },
       ],
     },
     {
@@ -127,10 +127,10 @@ const SetupSurvey = ({ onComplete }) => {
       id: "q11",
       label: "Which word must describe the jewel?",
       options: [
-        { id: "meaningful", label: "Meaningful", img: "q11.1.png" },
-        { id: "timeless", label: "Timeless", img: "q11.2.png" },
-        { id: "simple", label: "Simple", img: "q11.3.png" },
-        { id: "impressive", label: "Impressive", img: "q11.4.png" },
+        { id: "meaningful", label: "Meaningful", img: "q11.2.png" },
+        { id: "timeless", label: "Timeless", img: "q11.4.png" },
+        { id: "simple", label: "Simple", img: "q11.1.png" },
+        { id: "impressive", label: "Impressive", img: "q11.3.png" },
       ],
     },
   ];
