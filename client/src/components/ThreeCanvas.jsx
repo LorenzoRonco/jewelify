@@ -553,10 +553,8 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
             disabled={!canUndo}
             title="Undo"
             style={{
-              width: '50px',
-              height: '50px',
-              fontSize: '28px',
-              lineHeight: '50px',
+              width: '48px',
+              height: '48px',
               padding: '0',
               margin: '0',
               border: '2px solid #ddd',
@@ -565,12 +563,18 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
               cursor: canUndo ? 'pointer' : 'not-allowed',
               boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
               opacity: canUndo ? 1 : 0.5,
-              textAlign: 'center',
-              verticalAlign: 'middle',
-              fontFamily: 'system-ui, -apple-system, sans-serif'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              flexShrink: 0,
+              border: 'none'
             }}
           >
-            ↶
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 7v6h6" />
+              <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13" />
+            </svg>
           </button>
           <span style={{
             fontSize: '11px',
@@ -586,10 +590,8 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
             disabled={!canRedo}
             title="Redo"
             style={{
-              width: '50px',
-              height: '50px',
-              fontSize: '28px',
-              lineHeight: '50px',
+              width: '48px',
+              height: '48px',
               padding: '0',
               margin: '0',
               border: '2px solid #ddd',
@@ -598,12 +600,18 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
               cursor: canRedo ? 'pointer' : 'not-allowed',
               boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
               opacity: canRedo ? 1 : 0.5,
-              textAlign: 'center',
-              verticalAlign: 'middle',
-              fontFamily: 'system-ui, -apple-system, sans-serif'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              flexShrink: 0,
+              border: 'none'
             }}
           >
-            ↷
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 7v6h-6" />
+              <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7" />
+            </svg>
           </button>
           <span style={{
             fontSize: '11px',
@@ -619,18 +627,27 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
             disabled={isLoading}
             title="Recalculate"
             style={{
-              width: '50px',
-              height: '50px',
-              fontSize: '20px',
+              width: '48px',
+              height: '48px',
+              padding: '0',
+              margin: '0',
               borderRadius: '50%',
               border: '2px solid #ddd',
               background: isLoading ? '#f0f0f0' : 'white',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              opacity: isLoading ? 0.5 : 1
+              opacity: isLoading ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
             }}
           >
-            ⟳
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M23 4v6h-6" />
+              <path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+            </svg>
           </button>
           <span style={{
             fontSize: '11px',
