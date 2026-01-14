@@ -22,106 +22,115 @@ const SetupSurvey = ({ onComplete }) => {
     { id: "earrings", label: "Earrings", img: earringsImg, disabled: true },
   ];
 
-  // Define 10 survey questions with options (multi-select)
   const surveyQuestions = [
     {
       id: "q1",
-      label: "Preferred style",
+      label: "What is their typical style?",
       options: [
-        { id: "classic", label: "Classic & Elegant" },
-        { id: "modern", label: "Modern & Minimal" },
-        { id: "vintage", label: "Vintage & Ornate" },
-        { id: "bold", label: "Bold & Artistic" },
+        { id: "classic", label: "Classic & Elegant", img: "q1.1.png" },
+        { id: "modern", label: "Modern & Minimalist", img: "q1.2.png" },
+        { id: "vintage", label: "Vintage & Ornate", img: "q1.3.png" },
+        { id: "bold", label: "Bold & Artistic", img: "q1.4.png" },
       ],
     },
     {
       id: "q2",
-      label: "Favorite colors",
+      label: "Which colors do they wear?",
       options: [
-        { id: "warm", label: "Warm tones" },
-        { id: "cool", label: "Cool tones" },
-        { id: "neutral", label: "Neutrals" },
-        { id: "vibrant", label: "Bright & Vibrant" },
+        { id: "warm", label: "Warm Tones", img: "q2.1.png" },
+        { id: "cool", label: "Cool Tones", img: "q2.2.png" },
+        { id: "neutral", label: "Neutrals", img: "q2.3.png" },
+        { id: "vibrant", label: "Bright & Vibrant", img: "q2.4.png" },
       ],
     },
     {
       id: "q3",
-      label: "Preferred shapes",
+      label: "Which kind of shapes do they prefer?",
       options: [
-        { id: "geometric", label: "Geometric" },
-        { id: "organic", label: "Organic" },
-        { id: "delicate", label: "Delicate" },
-        { id: "statement", label: "Statement" },
+        { id: "curves", label: "Curves", img: "q3.1.png" },
+        { id: "leaves", label: "Leaves", img: "q3.2.png" },
+        { id: "organic", label: "Organic", img: "q3.3.png" },
+        { id: "asymmetrical", label: "Asymmetrical", img: "q3.4.png" },
       ],
     },
     {
       id: "q4",
-      label: "Materials",
+      label: "What color of metal do they most frequently wear?",
       options: [
-        { id: "gold", label: "Gold" },
-        { id: "silver", label: "Silver" },
-        { id: "platinum", label: "Platinum" },
-        { id: "mixed", label: "Mixed metals" },
+        { id: "yellow", label: "Yellow", img: "q4.1.png" },
+        { id: "white", label: "White / Silver", img: "q4.2.png" },
+        { id: "pink", label: "Pink / Red", img: "q4.3.png" },
+        { id: "mixed", label: "Mix of colors", img: "q4.4.png" },
       ],
     },
     {
       id: "q5",
-      label: "Stone preference",
+      label: "What kind of finish do you think they would prefer?",
       options: [
-        { id: "diamond", label: "Diamond" },
-        { id: "emerald", label: "Emerald" },
-        { id: "sapphire", label: "Sapphire" },
-        { id: "none", label: "No stone" },
+        { id: "polished", label: "Polished & Shiny", img: "q5.1.png" },
+        { id: "matte", label: "Matte & Brushed", img: "q5.2.png" },
+        { id: "textured", label: "Textured", img: "q5.3.png" },
+        { id: "hammered", label: "Hammered", img: "q5.4.png" },
       ],
     },
     {
       id: "q6",
-      label: "Budget range",
+      label: "Should this piece feature a stone?",
       options: [
-        { id: "under100", label: "Under €100" },
-        { id: "100to500", label: "€100 - €500" },
-        { id: "500to1000", label: "€500 - €1000" },
-        { id: "1000plus", label: "€1000+" },
+        { id: "centerpiece", label: "Yes, as the main centerpiece", img: "q6.1.png" },
+        { id: "accent", label: "Yes, but only as small accent stones", img: "q6.2.png" },
+        { id: "lots", label: "Yes, lots of stones", img: "q6.3.png" },
+        { id: "none", label: "No, I prefer a metal-only design", img: "q6.4.png" },
       ],
     },
     {
       id: "q7",
-      label: "Occasion",
+      label: "Which mood feels right for them?",
       options: [
-        { id: "everyday", label: "Everyday" },
-        { id: "special", label: "Special events" },
-        { id: "gift", label: "Gift" },
-        { id: "heirloom", label: "Heirloom" },
+        { id: "calm", label: "Calm & Serene", img: "q7.1.png" },
+        { id: "passionate", label: "Passionate & Energetic", img: "q7.2.png" },
+        { id: "royal", label: "Royal & Luxurious", img: "q7.3.png" },
+        { id: "happy", label: "Happy & Bright", img: "q7.4.png" },
       ],
     },
     {
       id: "q8",
-      label: "Finish",
+      label: "What is the primary occasion for this jewel?",
       options: [
-        { id: "polished", label: "Polished" },
-        { id: "hammered", label: "Hammered" },
-        { id: "brushed", label: "Brushed" },
-        { id: "matte", label: "Matte" },
+        { id: "birthday", label: "Birthday Milestone", img: "q8.1.png" },
+        { id: "wedding", label: "Wedding / Romantic", img: "q8.2.png" },
+        { id: "achievement", label: "Personal Achievement", img: "q8.3.png" },
+        { id: "justbecause", label: "Just because", img: "q8.4.png" },
       ],
     },
     {
       id: "q9",
-      label: "Engraving",
+      label: "How often will the jewel be worn?",
       options: [
-        { id: "none", label: "No engraving" },
-        { id: "initials", label: "Initials" },
-        { id: "date", label: "Date" },
-        { id: "message", label: "Short message" },
+        { id: "daily", label: "Every single day", img: "q9.1.png" },
+        { id: "frequently", label: "Frequently, not daily", img: "q9.2.png" },
+        { id: "occasionally", label: "Every 2-3 months", img: "q9.3.png" },
+        { id: "special", label: "Only on special occasions", img: "q9.4.png" },
       ],
     },
     {
       id: "q10",
-      label: "Delivery timeline",
+      label: "How active is the wearer in their daily life?",
       options: [
-        { id: "rush", label: "Rush" },
-        { id: "standard", label: "Standard" },
-        { id: "flexible", label: "Flexible" },
-        { id: "unknown", label: "Not sure" },
+        { id: "veryactive", label: "Very Active", img: "q10.1.png" },
+        { id: "average", label: "Average Activity", img: "q10.2.png" },
+        { id: "light", label: "Light Activity", img: "q10.3.png" },
+        { id: "noactivity", label: "No Activity", img: "q10.4.png" },
+      ],
+    },
+    {
+      id: "q11",
+      label: "Which word must describe the jewel?",
+      options: [
+        { id: "meaningful", label: "Meaningful", img: "q11.1.png" },
+        { id: "timeless", label: "Timeless", img: "q11.2.png" },
+        { id: "simple", label: "Simple", img: "q11.3.png" },
+        { id: "impressive", label: "Impressive", img: "q11.4.png" },
       ],
     },
   ];
@@ -219,25 +228,12 @@ const SetupSurvey = ({ onComplete }) => {
                   className={`option-card ${answers.category === option.id ? "selected" : ""}`}
                   onClick={() => !option.disabled && handleSelectAnswer("category", option.id)}
                   disabled={option.disabled}
-                  style={option.disabled ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+                  style={option.disabled ? { cursor: "not-allowed" } : {}}
                 >
                   <img src={option.img} alt={option.label} className="option-image" />
                   <div className="option-label">{option.label}</div>
                   {option.disabled && (
-                    <div
-                      className="option-description"
-                      style={{
-                        color: '#3a4a6b',
-                        fontSize: '1.15em',
-                        fontWeight: 'bold',
-                        marginTop: '0.5em',
-                        letterSpacing: '0.5px',
-                        textShadow: '0 1px 4px #fff, 0 0 2px #b22222',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Coming soon
-                    </div>
+                    <div className="coming-soon-badge">Available Soon</div>
                   )}
                 </button>
               ))}
@@ -255,12 +251,18 @@ const SetupSurvey = ({ onComplete }) => {
                 <div className="options-grid">
                   {q.options.map((option) => {
                     const selected = answers.survey[q.id] === option.id;
+                    const imgSrc = `../../images/${option.img}`;
                     return (
                       <button
                         key={option.id}
                         className={`option-card ${selected ? "selected" : ""}`}
                         onClick={() => selectSurveyOption(q.id, option.id)}
                       >
+                        <img 
+                            src={imgSrc} 
+                            alt={option.label} 
+                            className="option-image"
+                          />
                         <div className="option-label">{option.label}</div>
                       </button>
                     );
@@ -308,14 +310,16 @@ const SetupSurvey = ({ onComplete }) => {
         {renderStep()}
       </main>
 
-      <button
-        className="btn-send"
-        onClick={handleNext}
-        disabled={!isAnswerSelected()}
-        aria-label={step === 2 ? "Generate Jewel" : "Next Step"}
-      >
-        {step === 2 ? "Generate Jewel" : "Next Step"}
-      </button>
+      <footer className="survey-footer">
+        <button
+          className="btn-send"
+          onClick={handleNext}
+          disabled={!isAnswerSelected()}
+          aria-label={step === 2 ? "Generate Jewel" : "Next Step"}
+        >
+          {step === 2 ? "Generate Jewel" : "Next Step"}
+        </button>
+      </footer>
     </div>
   );
 };

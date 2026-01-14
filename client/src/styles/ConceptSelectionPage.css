@@ -35,9 +35,9 @@
 /* Grid of big cards */
 .concepts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 2.5rem;
-  max-width: 1200px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  max-width: 1100px;
   width: 100%;
   margin: 0 auto;
   align-items: start;
@@ -45,7 +45,7 @@
 
 .concept-card {
   background: #fff;
-  padding: 3rem;
+  padding: 1.5rem;
   border-radius: 8px;
   text-align: center;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.09);
@@ -55,7 +55,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 520px;
+  min-height: 340px;
 }
 
 .concept-card:hover {
@@ -64,13 +64,13 @@
 }
 
 .concept-icon img {
-  width: 22rem;
-  height: 22rem;
+  width: 14rem;
+  height: 14rem;
   object-fit: cover;
-  margin-bottom: 1.2rem;
+  margin-bottom: 0.8rem;
   border-radius: 10px;
   background: #fafafa;
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
 .concept-label {
@@ -89,12 +89,12 @@
   }
 
   .concept-icon img {
-    width: 16rem;
-    height: 16rem;
+    width: 12rem;
+    height: 12rem;
   }
 
   .concept-card {
     min-height: auto;
-    padding: 2rem;
+    padding: 1.5rem;
   }
 }

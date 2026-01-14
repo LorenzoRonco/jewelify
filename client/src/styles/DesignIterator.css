@@ -1,4 +1,13 @@
 /* Styles for DesignIterator */
+
+.design-iterator {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 91px);
+  background: #fff;
+  overflow: hidden;
+}
+
 .iterator-header {
   display: flex;
   align-items: center;
@@ -191,12 +200,6 @@
 
 .part-option-item:last-child {
   border-bottom: none;
-}
-
-.option-label {
-  font-weight: 500;
-  color: #666;
-  font-size: 0.9rem;
 }
 
 .option-value {

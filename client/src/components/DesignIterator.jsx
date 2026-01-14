@@ -189,10 +189,11 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     let stoneFile = "STONE_BRILLIANT.glb";
     if (baseConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
     if (baseConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     initialConfig = {
       ...baseConfig,
-      bandPath: `http://localhost:5173/models/ring/${bandFile}`,
-      stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+      bandPath: `${baseUrl}/models/ring/${bandFile}`,
+      stonePath: `${baseUrl}/models/ring/${stoneFile}`,
     };
   } else {
     let incomingModelPath = location?.state?.modelPath;
@@ -435,8 +436,8 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       if (newConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
       const fullConfig = {
         ...newConfig,
-        bandPath: `http://localhost:5173/models/ring/${bandFile}`,
-        stonePath: `http://localhost:5173/models/ring/${stoneFile}`,
+        bandPath: `${baseUrl}/models/ring/${bandFile}`,
+        stonePath: `${baseUrl}/models/ring/${stoneFile}`,
       };
       setConfig(fullConfig);
       setEstimatedDays(getEstimatedDays(fullConfig));
@@ -647,8 +648,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   React.useEffect(() => {
     setLeft(
-      <div>
-        <button className="back-btn btn-back" onClick={() => {
+        <button className="back-btn btn-back-small" onClick={() => {
           if (from === 'concepts') navigate('/concepts');
           else if (from === 'inspiration') navigate(-1);
           else if (from === 'survey') navigate('/survey', { state: { step: 2 } });
@@ -656,11 +656,10 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         }}>
           ← Back
         </button>
-      </div>
     );
 
     return () => setLeft(null);
-  }, [from]);
+  }, []);
 
   React.useEffect(() => {
     setRight(
