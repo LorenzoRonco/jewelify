@@ -696,7 +696,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   React.useEffect(() => {
     setRight(
       <div className="design-header-right">
-        <div className="model-tag">Model: {config.modelPath || 'default'}</div>
+        {/* <div className="model-tag">Model: {config.modelPath || 'default'}</div> */}
       </div>
     );
 

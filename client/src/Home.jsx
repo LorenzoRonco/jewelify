@@ -15,7 +15,7 @@ function Home({ onStartDesign }) {
     <div className="home-container">
       <main className="home-main">
         <section className="home-hero">
-          <h2>Design YOUR jewelry</h2>
+          <h2>Design YOUR Jewelry</h2>
           <p>Create bespoke jewelry pieces tailored to your unique style.</p>
           <button className="btn-start-design" onClick={() => navigate('/survey')}>
             Start Designing

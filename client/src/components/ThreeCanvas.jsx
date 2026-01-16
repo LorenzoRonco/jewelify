@@ -79,7 +79,7 @@ const GLTFModel = ({ modelPath, scale = 1, materialColor, config }) => {
   }, [scene, materialColor, config?.polish, config?.stoneColor, config?.clarity]);
 
   // Usa direttamente primitive per renderizzare la scene
-  return <primitive object={scene} scale={scale} position={[0, -0.7, 0]} />;
+  return <primitive object={scene} scale={scale} position={[0, -0.8, 0]} />;
 };
 
 const JewelModel = ({
