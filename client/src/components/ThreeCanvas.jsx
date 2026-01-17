@@ -567,8 +567,7 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
               alignItems: 'center',
               justifyContent: 'center',
               fontFamily: 'system-ui, -apple-system, sans-serif',
-              flexShrink: 0,
-              border: 'none'
+              flexShrink: 0
             }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -604,8 +603,7 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
               alignItems: 'center',
               justifyContent: 'center',
               fontFamily: 'system-ui, -apple-system, sans-serif',
-              flexShrink: 0,
-              border: 'none'
+              flexShrink: 0
             }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

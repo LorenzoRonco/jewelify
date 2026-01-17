@@ -370,9 +370,89 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     console.log("Recalculate with prompt:", aiPrompt);
 
+    const promptLower = aiPrompt.toLowerCase();
+
+    // Controlla multiple stones
+    const multipleStoneKeywords = ['2 stone', 'two stone', 'more stones', 'multiple stones', 'double stone', 'additional stone', '3 stone', 'three stone', 'cluster'];
+    const hasMultipleStones = multipleStoneKeywords.some(keyword => promptLower.includes(keyword));
+
+    if (hasMultipleStones) {
+      setDropdownToast("Feasibility error: Multiple stones are not available with the current model");
+      setTimeout(() => setDropdownToast(null), 4000);
+      setShowRecalculateModal(false);
+      return;
+    }
+
+    // Controlla pietre non supportate
+    const supportedStoneKeywords = [
+      'clear', 'transparent', 'colorless', 'diamond', 'brilliant',
+      'pink', 'blush', 'rose quartz', 'morganite', 'coral',
+      'blue', 'sapphire', 'sky blue', 'deep blue', 'aqua',
+      'green', 'emerald', 'jade', 'light green', 'peridot',
+      'red', 'ruby', 'crimson', 'deep red', 'garnet'
+    ];
+    const unsupportedStones = [
+      'topaz', 'opal', 'amethyst', 'citrine', 'tourmaline', 'spinel',
+      'kunzite', 'aquamarine', 'moissanite', 'cz', 'cubic zirconia',
+      'alexandrite', 'tanzanite', 'moonstone', 'labradorite', 'turquoise',
+      'pearl', 'coral ring', 'onyx', 'iolite', 'sunstone', 'rhodolite',
+      'tsavorite', 'black tourmaline'
+    ];
+    const hasSupportedStone = supportedStoneKeywords.some(keyword => promptLower.includes(keyword));
+    const foundUnsupportedStone = unsupportedStones.find(stone => promptLower.includes(stone));
+
+    if (foundUnsupportedStone && !hasSupportedStone) {
+      setDropdownToast(`Feasibility error: ${foundUnsupportedStone.charAt(0).toUpperCase() + foundUnsupportedStone.slice(1)} is not available with the current model`);
+      setTimeout(() => setDropdownToast(null), 4000);
+      setShowRecalculateModal(false);
+      return;
+    }
+
+    // Controlla materiali non supportati
+    const supportedMaterialKeywords = [
+      'gold', 'golden', 'yellow',
+      'silver', 'white metal', 'platinum-like',
+      'rose', 'rose gold', 'copper', 'blush',
+      'platinum', 'white', 'cool'
+    ];
+    const unsupportedMaterials = [
+      'palladium', 'titanium', 'tungsten', 'bronze', 'steel', 'stainless',
+      'white gold', 'iridium', 'aluminum', 'chrome', 'nickel', 'cobalt',
+      'molybdenum', 'tantalum', 'rhenium', 'copper ring'
+    ];
+    const hasMaterialMention = supportedMaterialKeywords.some(keyword => promptLower.includes(keyword));
+    const foundUnsupportedMaterial = unsupportedMaterials.find(material => promptLower.includes(material));
+
+    if (foundUnsupportedMaterial && !hasMaterialMention) {
+      setDropdownToast(`Feasibility error: ${foundUnsupportedMaterial.charAt(0).toUpperCase() + foundUnsupportedMaterial.slice(1)} is not available with the current model`);
+      setTimeout(() => setDropdownToast(null), 4000);
+      setShowRecalculateModal(false);
+      return;
+    }
+
+    // Controlla engraving
+    const engravingKeywords = ['engraving', 'engrave', 'engraved', 'inscription', 'inscribe', 'inscribed', 'etch', 'etched', 'carving', 'carved'];
+    const hasEngraving = engravingKeywords.some(keyword => promptLower.includes(keyword));
+
+    if (hasEngraving) {
+      setDropdownToast("Feasibility error: Engraving is not available with the current model");
+      setTimeout(() => setDropdownToast(null), 4000);
+      setShowRecalculateModal(false);
+      return;
+    }
+
     // Parse the prompt to extract keywords
     const parsedKeywords = parseAiPrompt(aiPrompt);
     console.log("Parsed keywords:", parsedKeywords);
+
+    // Controlla se sono stati trovati keywords
+    if (Object.keys(parsedKeywords).length === 0) {
+      // Mostra toast di errore
+      setDropdownToast("Sorry, I didn't recognize any design terms in your description. Try using words like: gold, silver, round, cushion, vintage, modern, etc.");
+      setTimeout(() => setDropdownToast(null), 4000);
+      setShowRecalculateModal(false);
+      return;
+    }
 
     setIsLoading(true);
     setLoadingMessage("Reshaping metal...");
@@ -382,13 +462,9 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     const delay = 2000 + Math.random() * 2000;
 
     setTimeout(() => {
-      const newConfig = getRandomConfigFromSurvey(surveyAnswers);
-
-      // Apply parsed keywords to the new config ONLY if keywords were found
-      if (Object.keys(parsedKeywords).length > 0) {
-        Object.assign(newConfig, parsedKeywords);
-      }
-      // If no keywords found, use the completely random config as-is
+      // Usa la config attuale come base e applica i parsed keywords
+      const newConfig = { ...config };
+      Object.assign(newConfig, parsedKeywords);
 
       // Update bandPath and stonePath to match bandDesign and stoneShape
       let bandFile = "BAND_CLASSIC.glb";
@@ -444,6 +520,94 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     }
 
     console.log(`AI Prompt for ${selectedPart}:`, aiPrompt);
+
+    const promptLower = aiPrompt.toLowerCase();
+
+    // Controlla feasibility per stone
+    if (selectedPart === "stone") {
+      const multipleStoneKeywords = ['2 stone', 'two stone', 'more stones', 'multiple stones', 'double stone', 'additional stone', '3 stone', 'three stone', 'cluster'];
+      const hasMultipleStones = multipleStoneKeywords.some(keyword => promptLower.includes(keyword));
+
+      if (hasMultipleStones) {
+        setDropdownToast("Feasibility error: Multiple stones are not available with the current model");
+        setTimeout(() => setDropdownToast(null), 4000);
+        setSelectedPart(null);
+        return;
+      }
+
+      // Pietre supportate
+      const supportedStoneKeywords = [
+        'clear', 'transparent', 'colorless', 'diamond', 'brilliant',
+        'pink', 'blush', 'rose quartz', 'morganite', 'coral',
+        'blue', 'sapphire', 'sky blue', 'deep blue', 'aqua',
+        'green', 'emerald', 'jade', 'light green', 'peridot',
+        'red', 'ruby', 'crimson', 'deep red', 'garnet'
+      ];
+
+      // Pietre non supportate
+      const unsupportedStones = [
+        'topaz', 'opal', 'amethyst', 'citrine', 'tourmaline', 'spinel',
+        'kunzite', 'aquamarine', 'moissanite', 'cz', 'cubic zirconia',
+        'alexandrite', 'tanzanite', 'moonstone', 'labradorite', 'turquoise',
+        'pearl', 'coral ring', 'onyx', 'iolite', 'sunstone', 'rhodolite',
+        'tsavorite', 'black tourmaline'
+      ];
+
+      // Controlla se menziona una pietra non supportata
+      const hasSupportedStone = supportedStoneKeywords.some(keyword => promptLower.includes(keyword));
+      const foundUnsupportedStone = unsupportedStones.find(stone => promptLower.includes(stone));
+
+      // Se menziona una pietra ma non è supportata, mostra errore specifico
+      if (foundUnsupportedStone && !hasSupportedStone) {
+        setDropdownToast(`Feasibility error: ${foundUnsupportedStone.charAt(0).toUpperCase() + foundUnsupportedStone.slice(1)} is not available with the current model`);
+        setTimeout(() => setDropdownToast(null), 4000);
+        setSelectedPart(null);
+        return;
+      }
+    }
+
+    // Controlla feasibility per band e head - materiali non supportati
+    if (selectedPart === "band" || selectedPart === "head") {
+      // Materiali supportati: gold, silver, rose, platinum
+      const supportedMaterialKeywords = [
+        'gold', 'golden', 'yellow',
+        'silver', 'white metal', 'platinum-like',
+        'rose', 'rose gold', 'copper', 'blush',
+        'platinum', 'white', 'cool'
+      ];
+
+      // Materiali non supportati che l'utente potrebbe cercare
+      const unsupportedMaterials = [
+        'palladium', 'titanium', 'tungsten', 'bronze', 'steel', 'stainless',
+        'white gold', 'iridium', 'aluminum', 'chrome', 'nickel', 'cobalt',
+        'molybdenum', 'tantalum', 'rhenium', 'aluminum', 'copper ring'
+      ];
+
+      // Controlla se l'utente ha scritto un materiale non supportato
+      const hasMaterialMention = supportedMaterialKeywords.some(keyword => promptLower.includes(keyword));
+      const foundUnsupportedMaterial = unsupportedMaterials.find(material => promptLower.includes(material));
+
+      // Se menziona un materiale ma non è supportato, mostra errore specifico
+      if (foundUnsupportedMaterial && !hasMaterialMention) {
+        setDropdownToast(`Feasibility error: ${foundUnsupportedMaterial.charAt(0).toUpperCase() + foundUnsupportedMaterial.slice(1)} is not available with the current model`);
+        setTimeout(() => setDropdownToast(null), 4000);
+        setSelectedPart(null);
+        return;
+      }
+    }
+
+    // Controlla feasibility per band - engraving non supportato
+    if (selectedPart === "band") {
+      const engravingKeywords = ['engraving', 'engrave', 'engraved', 'inscription', 'inscribe', 'inscribed', 'etch', 'etched', 'carving', 'carved'];
+      const hasEngraving = engravingKeywords.some(keyword => promptLower.includes(keyword));
+
+      if (hasEngraving) {
+        setDropdownToast("Feasibility error: Engraving is not available with the current model");
+        setTimeout(() => setDropdownToast(null), 4000);
+        setSelectedPart(null);
+        return;
+      }
+    }
 
     // Chiudi il modale
     setSelectedPart(null);
@@ -524,31 +688,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         if (parsedKeywords.clarity && parsedKeywords.clarity !== config.clarity) {
           updates.clarity = parsedKeywords.clarity;
         }
+        // Applica gli updates solo se ci sono keywords rilevanti
+        handleInstantUpdates(updates, updateEstimates);
       } else {
-        // Fallback: genera a caso
-        const shapes = ["brilliant", "diamond", "gem"];
-        const currentShape = config.stoneShape || "brilliant";
-        const availableShapes = shapes.filter(s => s !== currentShape);
-        const randomShape = availableShapes[Math.floor(Math.random() * availableShapes.length)];
-
-        updates.stoneShape = randomShape;
-        // Aggiorna anche stonePath per caricare il modello 3D corretto
-        let stoneFile = "STONE_BRILLIANT.glb";
-        if (randomShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
-        if (randomShape === "gem") stoneFile = "STONE_GEM.glb";
-        updates.stonePath = `${baseUrl}/models/ring/${stoneFile}`;
-
-        const colors = ["clear", "pink", "blue", "green", "red"];
-        const currentColor = config.stoneColor || "clear";
-        const availableColors = colors.filter(c => c !== currentColor);
-        updates.stoneColor = availableColors[Math.floor(Math.random() * availableColors.length)];
-
-        const newClarity = Math.min(config.clarity + 0.1, 1);
-        updates.clarity = newClarity;
+        // Nessuna keyword rilevante: mostra errore e non applicare cambio
+        setDropdownToast("Sorry, I didn't find any stone-related terms. Try: round, cushion, pink, blue, clear, diamond, oval, brilliant, etc.");
+        setTimeout(() => setDropdownToast(null), 4000);
       }
-
-      // Sempre applica gli updates
-      handleInstantUpdates(updates, updateEstimates);
     } else if (part === "band") {
       // Controlla se ci sono keywords rilevanti per la band (incluso bandMaterialColor per il colore)
       const relevantKeywords = ['bandDesign', 'metalFinish', 'polish', 'bandMaterialColor'];
@@ -578,39 +724,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         if (parsedKeywords.bandMaterialColor && parsedKeywords.bandMaterialColor !== config.bandMaterialColor) {
           updates.bandMaterialColor = parsedKeywords.bandMaterialColor;
         }
+        // Applica gli updates solo se ci sono keywords rilevanti
+        handleInstantUpdates(updates, updateEstimates);
       } else {
-        // Fallback: genera a caso
-        const designs = ["Classic", "Knife", "Flat"];
-        const currentDesign = config.bandDesign || "Classic";
-        const availableDesigns = designs.filter(d => d !== currentDesign);
-        let randomDesign;
-        if (availableDesigns.length > 0) {
-          randomDesign = availableDesigns[Math.floor(Math.random() * availableDesigns.length)];
-        } else {
-          // Se non ci sono altri designs, prendi uno random
-          randomDesign = designs[Math.floor(Math.random() * designs.length)];
-        }
-        updates.bandDesign = randomDesign;
-        // Aggiorna anche bandPath per caricare il modello 3D corretto
-        let bandFile = "BAND_CLASSIC.glb";
-        if (randomDesign === "Knife") bandFile = "BAND_KNIFE.glb";
-        if (randomDesign === "Flat") bandFile = "BAND_FLAT.glb";
-        updates.bandPath = `${baseUrl}/models/ring/${bandFile}`;
-
-        const finishes = ["polished", "matte", "hammered"];
-        const currentFinish = config.metalFinish || "polished";
-        const availableFinishes = finishes.filter(f => f !== currentFinish);
-        updates.metalFinish = availableFinishes[Math.floor(Math.random() * availableFinishes.length)];
-
-        // Fallback: genera colore random per il band
-        const colors = ["gold", "silver", "rose", "platinum"];
-        const currentBandColor = config.bandMaterialColor || config.materialColor || "gold";
-        const availableBandColors = colors.filter(c => c !== currentBandColor);
-        updates.bandMaterialColor = availableBandColors[Math.floor(Math.random() * availableBandColors.length)];
+        // Nessuna keyword rilevante: mostra errore e non applicare cambio
+        setDropdownToast("Sorry, I didn't find any band-related terms. Try: classic, knife, flat, gold, silver, rose, platinum, polished, matte, hammered, etc.");
+        setTimeout(() => setDropdownToast(null), 4000);
       }
-
-      // Sempre applica gli updates
-      handleInstantUpdates(updates, updateEstimates);
     } else if (part === "head") {
       // Controlla se ci sono keywords rilevanti per la head (non metalFinish - quello è del band)
       const relevantKeywords = ['materialColor', 'clarity'];
@@ -625,19 +745,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         if (parsedKeywords.clarity && parsedKeywords.clarity !== config.clarity) {
           updates.clarity = parsedKeywords.clarity;
         }
+        // Applica gli updates solo se ci sono keywords rilevanti
+        handleInstantUpdates(updates, updateEstimates);
       } else {
-        // Fallback: genera a caso
-        const colors = ["gold", "silver", "rose", "platinum"];
-        const currentColor = config.materialColor || "gold";
-        const availableColors = colors.filter(c => c !== currentColor);
-        updates.materialColor = availableColors[Math.floor(Math.random() * availableColors.length)];
-
-        const newClarity = Math.min(config.clarity + 0.05, 1);
-        updates.clarity = newClarity;
+        // Nessuna keyword rilevante: mostra errore e non applicare cambio
+        setDropdownToast("Sorry, I didn't find any head-related terms. Try: gold, silver, rose, platinum, brilliant, clear, transparent, etc.");
+        setTimeout(() => setDropdownToast(null), 4000);
       }
-
-      // Sempre applica gli updates
-      handleInstantUpdates(updates, updateEstimates);
     }
   };
 
@@ -709,6 +823,16 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         <div className="dropdown-toast">
           <span className="spinner" aria-hidden="true"></span>
           <span>{dropdownToast}</span>
+          <button
+            className="toast-close"
+            onClick={() => {
+              setDropdownToast(null);
+              if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+            }}
+            aria-label="Close notification"
+          >
+            ✕
+          </button>
         </div>
       )}
       <main className="iterator-main">
