@@ -283,7 +283,7 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
   // Combined ring models from local public folder
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const bandPath = config.bandPath || `${baseUrl}/models/ring/BAND_CLASSIC.glb`;
-  const headPath = `${baseUrl}/models/ring/HEAD_4PRONGS.glb`;
+  const headPath = config.headPath || `${baseUrl}/models/ring/HEAD_4PRONGS.glb`;
   const stonePath = config.stonePath || `${baseUrl}/models/ring/STONE_BRILLIANT.glb`;
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 2, MAX_ZOOM));

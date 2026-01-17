@@ -105,6 +105,20 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       }
     }
 
+    // Head models
+    const headModels = {
+      '4prongs': ['4 prong', '4-prong', '4prong', 'four prong', 'classic prong', 'traditional prong'],
+      '2prongs': ['2 prong', '2-prong', '2prong', 'two prong', 'double prong', 'minimal prong'],
+      twirl: ['twirl', 'twisted', 'spiral', 'swirl', 'wrap', 'coiled']
+    };
+
+    for (const [model, keywords] of Object.entries(headModels)) {
+      if (keywords.some(keyword => promptLower.includes(keyword))) {
+        result.headModel = model;
+        break;
+      }
+    }
+
     // Quality modifiers
     if (promptLower.includes('high quality') || promptLower.includes('clarity') || promptLower.includes('flawless')) {
       result.clarity = 0.85;
@@ -126,10 +140,15 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     if (baseConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
     if (baseConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
 
+    let headFile = "HEAD_4PRONGS.glb";
+    if (baseConfig.headModel === "2prongs") headFile = "HEAD_2PRONGS.glb";
+    if (baseConfig.headModel === "twirl") headFile = "HEAD_TWIRL.glb";
+
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
     return {
       ...baseConfig,
       bandPath: `${baseUrl}/models/ring/${bandFile}`,
+      headPath: `${baseUrl}/models/ring/${headFile}`,
       stonePath: `${baseUrl}/models/ring/${stoneFile}`,
     };
   };
@@ -154,7 +173,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     }
     initialConfig = buildPaths(baseConfig);
   } else {
-    const incomingModelPath = location?.state?.modelPath || "/models/Bracelet.obj";
+    const incomingModelPath = location?.state?.modelPath;
     const fallbackConfig = withSurveyDefaults({
       design: "geometric",
       material: "palladium",
@@ -315,10 +334,20 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       "clarity",
       "stoneColor",
       "metalFinish",
+      "headModel",
+      "bandDesign",
+      "stoneShape",
     ];
 
     if (instantKeys.includes(key)) {
-      handleInstantUpdate(key, value, updateEstimates);
+      handleInstantUpdate(key, value, (updatedConfig) => {
+        // Rebuild paths for headModel, bandDesign, and stoneShape changes
+        if (key === "headModel" || key === "bandDesign" || key === "stoneShape") {
+          const configWithPaths = buildPaths(updatedConfig);
+          setConfig(configWithPaths);
+        }
+        updateEstimates(updatedConfig);
+      });
       return;
     }
 
@@ -466,10 +495,13 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       const newConfig = { ...config };
       Object.assign(newConfig, parsedKeywords);
 
-      // Update bandPath and stonePath to match bandDesign and stoneShape
+      // Update bandPath, headPath and stonePath to match bandDesign, headModel and stoneShape
       let bandFile = "BAND_CLASSIC.glb";
       if (newConfig.bandDesign === "Knife") bandFile = "BAND_KNIFE.glb";
       if (newConfig.bandDesign === "Flat") bandFile = "BAND_FLAT.glb";
+      let headFile = "HEAD_4PRONGS.glb";
+      if (newConfig.headModel === "2prongs") headFile = "HEAD_2PRONGS.glb";
+      if (newConfig.headModel === "twirl") headFile = "HEAD_TWIRL.glb";
       let stoneFile = "STONE_BRILLIANT.glb";
       if (newConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
       if (newConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
@@ -477,6 +509,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       const fullConfig = {
         ...newConfig,
         bandPath: `${baseUrl}/models/ring/${bandFile}`,
+        headPath: `${baseUrl}/models/ring/${headFile}`,
         stonePath: `${baseUrl}/models/ring/${stoneFile}`,
       };
       setConfig(fullConfig);
@@ -661,6 +694,8 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       if (allParsedKeywords.materialColor) parsedKeywords.materialColor = allParsedKeywords.materialColor;
       // clarity è condiviso tra head e stone, ma lo includiamo per head
       if (allParsedKeywords.clarity) parsedKeywords.clarity = allParsedKeywords.clarity;
+      // headModel per lo stile di prong
+      if (allParsedKeywords.headModel) parsedKeywords.headModel = allParsedKeywords.headModel;
     }
 
     console.log(`Applying changes for ${part}:`, parsedKeywords);
@@ -733,7 +768,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       }
     } else if (part === "head") {
       // Controlla se ci sono keywords rilevanti per la head (non metalFinish - quello è del band)
-      const relevantKeywords = ['materialColor', 'clarity'];
+      const relevantKeywords = ['materialColor', 'clarity', 'headModel'];
       const hasHeadKeywords = relevantKeywords.some(k => k in parsedKeywords);
 
       if (hasHeadKeywords) {
@@ -745,11 +780,20 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         if (parsedKeywords.clarity && parsedKeywords.clarity !== config.clarity) {
           updates.clarity = parsedKeywords.clarity;
         }
+
+        if (parsedKeywords.headModel && parsedKeywords.headModel !== config.headModel) {
+          updates.headModel = parsedKeywords.headModel;
+          // Aggiorna anche headPath per caricare il modello 3D corretto
+          let headFile = "HEAD_4PRONGS.glb";
+          if (parsedKeywords.headModel === "2prongs") headFile = "HEAD_2PRONGS.glb";
+          if (parsedKeywords.headModel === "twirl") headFile = "HEAD_TWIRL.glb";
+          updates.headPath = `${baseUrl}/models/ring/${headFile}`;
+        }
         // Applica gli updates solo se ci sono keywords rilevanti
         handleInstantUpdates(updates, updateEstimates);
       } else {
         // Nessuna keyword rilevante: mostra errore e non applicare cambio
-        setDropdownToast("Sorry, I didn't find any head-related terms. Try: gold, silver, rose, platinum, brilliant, clear, transparent, etc.");
+        setDropdownToast("Sorry, I didn't find any head-related terms. Try: 4-prong, 2-prong, twirl, gold, silver, rose, platinum, etc.");
         setTimeout(() => setDropdownToast(null), 4000);
       }
     }
@@ -773,7 +817,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         icon: "✨",
         description: "The head holds your gemstone securely in place. Choose your prong style and metal finish.",
         options: [
-          { label: "Style", value: "4-Prong" },
+          { label: "Style", value: config.headModel === "2prongs" ? "2-Prong" : config.headModel === "twirl" ? "Twirl" : "4-Prong" },
           { label: "Metal", value: config.materialColor || "gold" },
           { label: "Finish", value: config.metalFinish || "polished" },
         ]

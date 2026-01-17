@@ -129,10 +129,15 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
      if (baseConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
      if (baseConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
 
+     let headFile = "HEAD_4PRONGS.glb";
+     if (baseConfig.headModel === "2prongs") headFile = "HEAD_2PRONGS.glb";
+     if (baseConfig.headModel === "twirl") headFile = "HEAD_TWIRL.glb";
+
      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
      return {
        ...baseConfig,
        bandPath: `${baseUrl}/models/ring/${bandFile}`,
+       headPath: `${baseUrl}/models/ring/${headFile}`,
        stonePath: `${baseUrl}/models/ring/${stoneFile}`,
      };
    };
@@ -161,6 +166,7 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
        bandDesign: "Classic",
        stoneShape: "brilliant",
        metalFinish: "polished",
+       headModel: "4prongs",
        stoneColor: baseConfig.stoneColor === "clear" ? "clear" : baseConfig.stoneColor,
        polish: Math.max(baseConfig.polish, 0.85),
        clarity: Math.max(baseConfig.clarity, 0.85),
@@ -174,6 +180,7 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
        style: "halo",
        bandDesign: "Flat",
        stoneShape: "gem",
+       headModel: "twirl",
        metalFinish: baseConfig.metalFinish === "matte" ? "matte" : "hammered",
        stoneColor: baseConfig.stoneColor === "clear" ? "red" : baseConfig.stoneColor,
        material: baseConfig.material === "gold" ? "rose" : baseConfig.material,

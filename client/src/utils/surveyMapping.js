@@ -17,6 +17,7 @@ const defaultConfig = {
   clarity: 0.7,
   bandDesign: "Classic",
   stoneShape: "brilliant",
+  headModel: "4prongs",
   modelPath: "/models/ring/BAND_CLASSIC.glb",
 };
 
@@ -55,6 +56,7 @@ export function deriveConfigFromSurveyAnswers(payload = {}) {
       config.bandDesign = "Classic";
       config.stoneShape = "brilliant";
       config.metalFinish = "polished";
+      config.headModel = "4prongs";
       break;
     case "modern":
       config.design = "geometric";
@@ -62,6 +64,7 @@ export function deriveConfigFromSurveyAnswers(payload = {}) {
       config.bandDesign = "Knife";
       config.stoneShape = "diamond";
       config.metalFinish = "polished";
+      config.headModel = "2prongs";
       break;
     case "vintage":
       config.design = "organic";
@@ -69,6 +72,7 @@ export function deriveConfigFromSurveyAnswers(payload = {}) {
       config.bandDesign = "Flat";
       config.stoneShape = "gem";
       config.metalFinish = "matte";
+      config.headModel = "twirl";
       break;
     case "bold":
       config.design = "statement";
@@ -76,6 +80,7 @@ export function deriveConfigFromSurveyAnswers(payload = {}) {
       config.bandDesign = "Flat";
       config.stoneShape = "gem";
       config.metalFinish = "polished";
+      config.headModel = "4prongs";
       break;
     default:
       break;
@@ -104,19 +109,23 @@ export function deriveConfigFromSurveyAnswers(payload = {}) {
     case "curves":
       config.design = "organic";
       config.bandDesign = "Classic";
+      config.headModel = "twirl";
       break;
     case "leaves":
       config.design = "organic";
       config.bandDesign = "Flat";
+      config.headModel = "twirl";
       break;
     case "organic":
       config.design = "organic";
       config.metalFinish = "hammered";
+      config.headModel = "twirl";
       break;
     case "asymmetrical":
       config.design = "statement";
       config.bandDesign = "Knife";
       config.stoneShape = "gem";
+      config.headModel = "2prongs";
       break;
     default:
       break;
