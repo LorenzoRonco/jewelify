@@ -267,6 +267,12 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         newHistory.push(updated);
         setHistoryState({ history: newHistory, historyIndex: newHistory.length - 1 });
         setConfig(updated);
+        // Ensure pricing and timing estimates reflect new geometry
+        try {
+          updateEstimates(updated);
+        } catch (e) {
+          console.warn('Failed to update estimates after geometry change', e);
+        }
       } catch (error) {
         console.error("Geometry update failed:", error);
         alert("Failed to update geometry. Please try again.");
@@ -295,7 +301,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   }
 
   function getEstimatedPrice(config) {
-    // Simple logic: platinum/rose = more expensive, polish/clarity = more expensive, colored stones = more expensive
+    // Backwards compatibility: compute price using same logic as earlier (kept for reference)
     let price = 1200;
     if (config.materialColor === 'platinum') price += 600;
     if (config.materialColor === 'rose') price += 200;
@@ -303,6 +309,18 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     if (config.clarity > 0.7) price += 120;
     if (config.stoneColor !== 'clear') price += 180;
     price += Math.round((config.polish + config.clarity) * 100);
+    if (price > 2500) price = 2500;
+    if (price < 1200) price = 1200;
+    return price;
+  }
+
+  // Compute estimated price by summing the breakdown line items. This ensures
+  // the live quote always matches the "more details" section.
+  function computeEstimatedPriceFromBreakdown(config) {
+    const items = getPriceBreakdown(config || {});
+    const sum = items.reduce((acc, it) => acc + (it.amount || 0), 0);
+    // Apply same bounding rules as the previous logic
+    let price = Math.round(sum);
     if (price > 2500) price = 2500;
     if (price < 1200) price = 1200;
     return price;
@@ -329,7 +347,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   const updateEstimates = useCallback((nextConfig) => {
     setEstimatedDays(getEstimatedDays(nextConfig));
-    setEstimatedPrice(getEstimatedPrice(nextConfig));
+    setEstimatedPrice(computeEstimatedPriceFromBreakdown(nextConfig));
   }, []);
 
   // Handle config changes (route to instant or async)
@@ -517,8 +535,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
         stonePath: `${baseUrl}/models/ring/${stoneFile}`,
       };
       setConfig(fullConfig);
-      setEstimatedDays(getEstimatedDays(fullConfig));
-      setEstimatedPrice(getEstimatedPrice(fullConfig));
+      updateEstimates(fullConfig);
       setHistoryState({ history: [fullConfig], historyIndex: 0 });
       setIsLoading(false);
       setLoadingMessage("");
@@ -865,6 +882,15 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     return () => setLeft(null);
   }, []);
+
+  // Keep live estimates in sync with config changes (including initial mount)
+  React.useEffect(() => {
+    try {
+      updateEstimates(config);
+    } catch (e) {
+      console.warn('Failed to initialize estimates', e);
+    }
+  }, [config, updateEstimates]);
 
   React.useEffect(() => {
     setRight(
