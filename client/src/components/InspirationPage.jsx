@@ -35,7 +35,20 @@ const makeImages = (prefix) => {
   if (prefix === 'ring') {
     const ringIndexes = [6, 22, 9, 10, 14, 13, 16, 7];
     const modelFile = `/models/${prefix}.obj`;
-    return ringIndexes.map((i) => ({ imageFile: `/images/${prefix}${i}.png`, modelFile }));
+
+    // Predefined concept configs for each ring tile (index matched to ringIndexes order)
+    const ringConcepts = [
+      { material:'platinum', materialColor: 'platinum', stoneColor: 'pink', bandDesign: 'Knife', stoneShape: 'brilliant', headModel: 'twirl', metalFinish: 'matte', polish: 0.85, clarity: 0.9},
+      { material: 'silver', materialColor: 'silver', stoneColor: 'clear', bandDesign: 'Classic', stoneShape: 'diamond', headModel: '4prongs', metalFinish: 'hammered', polish: 0.7, clarity: 0.7, design: 'organic', style: 'vintage' },
+      { material: 'rose', materialColor: 'rose', stoneColor: 'red', bandDesign: 'Flat', stoneShape: 'gem', headModel: '2prongs', metalFinish: 'polished', polish: 0.9, clarity: 0.95, design: 'geometric', style: 'pavé' },
+      { material: 'silver', materialColor: 'silver', stoneColor: 'clear', bandDesign: 'Classic', stoneShape: 'diamond', headModel: 'twirl', metalFinish: 'polished', polish: 0.8, clarity: 0.85, design: 'delicate', style: 'solitaire' },
+      { material: 'platinum', materialColor: 'platinum', stoneColor: 'green', bandDesign: 'Classic', stoneShape: 'gem', headModel: '4prongs', metalFinish: 'polished', polish: 0.65, clarity: 0.7, design: 'statement', style: 'halo' },
+      { material: 'gold', materialColor: 'gold', stoneColor: 'blue', bandDesign: 'Flat', stoneShape: 'brilliant', headModel: '4prongs', metalFinish: 'hammered', polish: 0.8, clarity: 0.8, design: 'delicate', style: 'solitaire' },
+      { material: 'silver', materialColor: 'silver', stoneColor: 'clear', bandDesign: 'Knife', stoneShape: 'diamond', headModel: '2prongs', metalFinish: 'matte', polish: 0.75, clarity: 0.8, design: 'statement', style: 'halo' },
+      { material: 'gold', materialColor: 'gold', stoneColor: 'clear', bandDesign: 'Classic', stoneShape: 'gem', headModel: '4prongs', metalFinish: 'polished', polish: 0.9, clarity: 0.9, design: 'delicate', style: 'pavé' },
+    ];
+
+    return ringIndexes.map((i, idx) => ({ imageFile: `/images/${prefix}${i}.png`, modelFile, conceptConfig: ringConcepts[idx] || {} }));
   }
 
   // Build 8 image objects for inspirations grid (default)
@@ -60,8 +73,8 @@ const InspirationPage = () => {
   };
 
   const handleSelect = (item) => {
-    // Go directly to the designer for now
-    navigate("/design", { state: { modelPath: item.modelFile, from: 'inspiration' } });
+    // Go directly to the designer and include a conceptConfig (if available)
+    navigate("/design", { state: { modelPath: item.modelFile, from: 'inspiration', conceptConfig: item.conceptConfig } });
   };
 
   const { setLeft, setRight } = useHeader();

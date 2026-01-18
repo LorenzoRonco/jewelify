@@ -172,6 +172,10 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       baseConfig = withSurveyDefaults({ ...baseConfig, ...conceptConfig });
     }
     initialConfig = buildPaths(baseConfig);
+  } else if (conceptConfig) {
+    const incomingModelPath = location?.state?.modelPath;
+    const baseConfig = withSurveyDefaults({ ...conceptConfig, modelPath: incomingModelPath });
+    initialConfig = buildPaths(baseConfig);
   } else {
     const incomingModelPath = location?.state?.modelPath;
     const fallbackConfig = withSurveyDefaults({
@@ -198,17 +202,19 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const [estimatedPrice, setEstimatedPrice] = useState(1500);
   const [estimatedDays, setEstimatedDays] = useState("30-35");
   const [dropdownToast, setDropdownToast] = useState(null);
+  const [dropdownToastType, setDropdownToastType] = useState(null); // 'warning' | 'success' | null
   const [showPriceDetails, setShowPriceDetails] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null); // Per il modale di customizzazione
   const [aiPrompt, setAiPrompt] = useState(""); // Per il prompt AI
   const [showRecalculateModal, setShowRecalculateModal] = useState(false); // Per il modale di recalculate
+  const TOAST_DURATION = 10000; // Toast display duration in ms (10s)
   const popupTimerRef = useRef(null);
   const updateDelayRef = useRef(null);
 
   const runAfterPopup = useCallback((message, action) => {
     if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
     if (updateDelayRef.current) clearTimeout(updateDelayRef.current);
-    const duration = 500 + Math.random() * 1000; // 0.5s to 1.5s
+    const duration = TOAST_DURATION; // use consistent 10s duration
     setDropdownToast(message || "Generating...");
     popupTimerRef.current = setTimeout(() => setDropdownToast(null), duration);
     updateDelayRef.current = setTimeout(() => {
@@ -407,9 +413,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     if (hasMultipleStones) {
       setDropdownToast("Feasibility error: Multiple stones are not available with the current model");
-      setTimeout(() => setDropdownToast(null), 4000);
-      setShowRecalculateModal(false);
-      return;
+      setTimeout(() => setDropdownToast(null), TOAST_DURATION);
     }
 
     // Controlla pietre non supportate
@@ -432,7 +436,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     if (foundUnsupportedStone && !hasSupportedStone) {
       setDropdownToast(`Feasibility error: ${foundUnsupportedStone.charAt(0).toUpperCase() + foundUnsupportedStone.slice(1)} is not available with the current model`);
-      setTimeout(() => setDropdownToast(null), 4000);
+      setTimeout(() => setDropdownToast(null), TOAST_DURATION);
       setShowRecalculateModal(false);
       return;
     }
@@ -454,7 +458,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     if (foundUnsupportedMaterial && !hasMaterialMention) {
       setDropdownToast(`Feasibility error: ${foundUnsupportedMaterial.charAt(0).toUpperCase() + foundUnsupportedMaterial.slice(1)} is not available with the current model`);
-      setTimeout(() => setDropdownToast(null), 4000);
+      setTimeout(() => setDropdownToast(null), TOAST_DURATION);
       setShowRecalculateModal(false);
       return;
     }
@@ -465,7 +469,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     if (hasEngraving) {
       setDropdownToast("Feasibility error: Engraving is not available with the current model");
-      setTimeout(() => setDropdownToast(null), 4000);
+      setTimeout(() => setDropdownToast(null), TOAST_DURATION);
       setShowRecalculateModal(false);
       return;
     }
@@ -478,7 +482,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     if (Object.keys(parsedKeywords).length === 0) {
       // Mostra toast di errore
       setDropdownToast("Sorry, I didn't recognize any design terms in your description. Try using words like: gold, silver, round, cushion, vintage, modern, etc.");
-      setTimeout(() => setDropdownToast(null), 4000);
+      setTimeout(() => setDropdownToast(null), TOAST_DURATION);
       setShowRecalculateModal(false);
       return;
     }
@@ -530,9 +534,20 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   // Execute purchase
   const handleExecutePurchase = () => {
     setShowConfirmModal(false);
-    alert("Order confirmed! (Mock implementation)");
-    onExit?.();
-  };
+
+    // Show a friendly success toast and delay exit so user sees it
+    const successMessage = "Order confirmed! Your jewel has been sent to the jeweler";
+    setDropdownToast(successMessage);
+    setDropdownToastType('success');
+
+    // Clear any previous popup timers and set a short delay before exiting
+    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+    popupTimerRef.current = setTimeout(() => {
+      setDropdownToast(null);
+      setDropdownToastType(null);
+      onExit?.();
+    }, 2000); // 2s so the user has a moment to see the confirmation
+  }; 
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
@@ -563,7 +578,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
       if (hasMultipleStones) {
         setDropdownToast("Feasibility error: Multiple stones are not available with the current model");
-        setTimeout(() => setDropdownToast(null), 4000);
+        setTimeout(() => setDropdownToast(null), TOAST_DURATION);
         setSelectedPart(null);
         return;
       }
@@ -593,7 +608,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       // Se menziona una pietra ma non è supportata, mostra errore specifico
       if (foundUnsupportedStone && !hasSupportedStone) {
         setDropdownToast(`Feasibility error: ${foundUnsupportedStone.charAt(0).toUpperCase() + foundUnsupportedStone.slice(1)} is not available with the current model`);
-        setTimeout(() => setDropdownToast(null), 4000);
+        setTimeout(() => setDropdownToast(null), TOAST_DURATION);
         setSelectedPart(null);
         return;
       }
@@ -623,7 +638,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       // Se menziona un materiale ma non è supportato, mostra errore specifico
       if (foundUnsupportedMaterial && !hasMaterialMention) {
         setDropdownToast(`Feasibility error: ${foundUnsupportedMaterial.charAt(0).toUpperCase() + foundUnsupportedMaterial.slice(1)} is not available with the current model`);
-        setTimeout(() => setDropdownToast(null), 4000);
+        setTimeout(() => setDropdownToast(null), TOAST_DURATION);
         setSelectedPart(null);
         return;
       }
@@ -636,7 +651,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
       if (hasEngraving) {
         setDropdownToast("Feasibility error: Engraving is not available with the current model");
-        setTimeout(() => setDropdownToast(null), 4000);
+        setTimeout(() => setDropdownToast(null), TOAST_DURATION);
         setSelectedPart(null);
         return;
       }
@@ -728,7 +743,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       } else {
         // Nessuna keyword rilevante: mostra errore e non applicare cambio
         setDropdownToast("Sorry, I didn't find any stone-related terms. Try: round, cushion, pink, blue, clear, diamond, oval, brilliant, etc.");
-        setTimeout(() => setDropdownToast(null), 4000);
+        setTimeout(() => setDropdownToast(null), TOAST_DURATION);
       }
     } else if (part === "band") {
       // Controlla se ci sono keywords rilevanti per la band (incluso bandMaterialColor per il colore)
@@ -764,7 +779,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       } else {
         // Nessuna keyword rilevante: mostra errore e non applicare cambio
         setDropdownToast("Sorry, I didn't find any band-related terms. Try: classic, knife, flat, gold, silver, rose, platinum, polished, matte, hammered, etc.");
-        setTimeout(() => setDropdownToast(null), 4000);
+        setTimeout(() => setDropdownToast(null), TOAST_DURATION);
       }
     } else if (part === "head") {
       // Controlla se ci sono keywords rilevanti per la head (non metalFinish - quello è del band)
@@ -794,7 +809,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       } else {
         // Nessuna keyword rilevante: mostra errore e non applicare cambio
         setDropdownToast("Sorry, I didn't find any head-related terms. Try: 4-prong, 2-prong, twirl, gold, silver, rose, platinum, etc.");
-        setTimeout(() => setDropdownToast(null), 4000);
+        setTimeout(() => setDropdownToast(null), TOAST_DURATION);
       }
     }
   };
@@ -863,14 +878,42 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
   return (
     <div className="design-iterator">
+      {dropdownToastType === 'success' && (
+        <div
+          className="toast-overlay"
+          onClick={() => {
+            setDropdownToast(null);
+            setDropdownToastType(null);
+            if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+          }}
+          aria-hidden="true"
+        />
+      )}
       {dropdownToast && (
-        <div className="dropdown-toast">
-          <span className="spinner" aria-hidden="true"></span>
+        <div className={`dropdown-toast ${dropdownToastType === 'success' ? 'success' : 'warning'}`}>
+          {dropdownToastType === 'success' ? (
+            <span className="success-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="10" fill="#E6F4EA" />
+                <path d="M8 12.5l2.2 2.2 5-5" stroke="#2E7D32" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            </span>
+          ) : (
+            <span className="warning-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <polygon points="12,3 22,20 2,20" fill="#FFEE58" stroke="#FBC02D" strokeWidth="0.5" />
+                <rect x="11" y="8" width="2" height="5" fill="#000" rx="1" />
+                <circle cx="12" cy="17" r="1" fill="#000" />
+              </svg>
+            </span>
+          )}
+
           <span>{dropdownToast}</span>
           <button
             className="toast-close"
             onClick={() => {
               setDropdownToast(null);
+              setDropdownToastType(null);
               if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
             }}
             aria-label="Close notification"
