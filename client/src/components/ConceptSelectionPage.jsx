@@ -1,206 +1,108 @@
-import React, { Suspense } from "react";
+import React, { useCallback } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import "../styles/ConceptSelectionPage.css";
-import braceletImg from "../../images/bracelet.png";
 import { useHeader } from "./HeaderContext";
 import { deriveConfigFromSurveyAnswers, withSurveyDefaults } from "../utils/surveyMapping";
-// Images are referenced directly from /images/ path; replace when ready
-
-const colorMap = {
-  gold: 0xffd700,
-  silver: 0xf5f3e7,
-  rose: 0xb76e79,
-  platinum: 0xc0e0ff,
-};
-
-const stoneColorMap = {
-  clear: 0xe0f7ff,
-  pink: 0xffc0cb,
-  blue: 0x0000ff,
-  green: 0x00ff00,
-  red: 0xff0000,
-  yellow: 0xffe066,
-};
-
-const PreviewModel = ({ bandPath, stonePath, config }) => {
-  const band = useGLTF(bandPath);
-  const stone = useGLTF(stonePath);
-
-  const applyMetal = React.useCallback((scene) => {
-    scene.traverse((child) => {
-      if (child.isMesh && child.material) {
-        const mat = Array.isArray(child.material) ? child.material[0] : child.material;
-        mat.color.setHex(colorMap[config.materialColor] || colorMap.gold);
-        mat.metalness = 1.0;
-        mat.roughness = typeof config.polish === "number" ? 1 - config.polish : 0.2;
-        mat.needsUpdate = true;
-      }
-    });
-  }, [config.materialColor, config.polish]);
-
-  const applyStone = React.useCallback((scene) => {
-    scene.traverse((child) => {
-      if (child.isMesh && child.material) {
-        const mat = Array.isArray(child.material) ? child.material[0] : child.material;
-        mat.color.setHex(stoneColorMap[config.stoneColor] || stoneColorMap.clear);
-        mat.metalness = 0;
-        mat.roughness = 0.1;
-        mat.transparent = true;
-        mat.opacity = 0.5 + (config.clarity || 0.5) * 0.5;
-        mat.needsUpdate = true;
-      }
-    });
-  }, [config.stoneColor, config.clarity]);
-
-  React.useEffect(() => {
-    if (band?.scene) applyMetal(band.scene);
-    if (stone?.scene) applyStone(stone.scene);
-  }, [band, stone, applyMetal, applyStone]);
-
-  useFrame((state) => {
-    if (band?.scene) band.scene.rotation.y += 0.002;
-    if (stone?.scene) stone.scene.rotation.y += 0.002;
-  });
-
-  return (
-    <group position={[0, -0.6, 0]}>
-      {band?.scene && <primitive object={band.scene} scale={1} />}
-      {stone?.scene && <primitive object={stone.scene} scale={1} />}
-    </group>
-  );
-};
-
-const ConceptPreview = ({ concept }) => {
-  const [fallbackImg, setFallbackImg] = React.useState(false);
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const bandPath = concept.config?.bandPath || `${baseUrl}/models/ring/BAND_CLASSIC.glb`;
-  const stonePath = concept.config?.stonePath || `${baseUrl}/models/ring/STONE_BRILLIANT.glb`;
-
-  const supportsWebGL = React.useMemo(() => {
-    try {
-      const canvas = document.createElement("canvas");
-      return !!window.WebGLRenderingContext && !!(canvas.getContext("webgl") || canvas.getContext("experimental-webgl"));
-    } catch (e) {
-      return false;
-    }
-  }, []);
-
-  if (fallbackImg || !supportsWebGL || !concept.config) {
-    const src = concept.image || "/images/concept_01.png";
-    return (
-      <div className="concept-preview placeholder-img">
-        <img src={src} alt={concept.name} onError={() => setFallbackImg(true)} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="concept-preview">
-      <Canvas camera={{ position: [0, 0, 3], fov: 40 }} style={{ height: 220 }} onCreated={({ gl }) => {
-        gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-      }}>
-        <ambientLight intensity={0.4} />
-        <directionalLight position={[4, 6, 6]} intensity={0.7} />
-        <Suspense fallback={null}>
-          <PreviewModel bandPath={bandPath} stonePath={stonePath} config={concept.config} />
-          <Environment preset="studio" />
-        </Suspense>
-        <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.7} />
-      </Canvas>
-    </div>
-  );
-};
+import thumbnailGenerator from "../utils/thumbnailGenerator";
 
 const ConceptSelectionPage = ({ surveyAnswers }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location?.state?.from || null;
 
-   const answers = surveyAnswers || location?.state?.surveyAnswers || null;
+  const answers = surveyAnswers || location?.state?.surveyAnswers || null;
 
-   const buildPaths = (baseConfig) => {
-     let bandFile = "BAND_CLASSIC.glb";
-     if (baseConfig.bandDesign === "Knife") bandFile = "BAND_KNIFE.glb";
-     if (baseConfig.bandDesign === "Flat") bandFile = "BAND_FLAT.glb";
+  // State to hold generated thumbnails
+  const [thumbnails, setThumbnails] = React.useState({});
+  const [isGenerating, setIsGenerating] = React.useState(true);
 
-     let stoneFile = "STONE_BRILLIANT.glb";
-     if (baseConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
-     if (baseConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
+  const buildPaths = (baseConfig) => {
+    let bandFile = "BAND_CLASSIC.glb";
+    if (baseConfig.bandDesign === "Knife") bandFile = "BAND_KNIFE.glb";
+    if (baseConfig.bandDesign === "Flat") bandFile = "BAND_FLAT.glb";
 
-     let headFile = "HEAD_4PRONGS.glb";
-     if (baseConfig.headModel === "2prongs") headFile = "HEAD_2PRONGS.glb";
-     if (baseConfig.headModel === "twirl") headFile = "HEAD_TWIRL.glb";
+    let stoneFile = "STONE_BRILLIANT.glb";
+    if (baseConfig.stoneShape === "diamond") stoneFile = "STONE_DIAMOND.glb";
+    if (baseConfig.stoneShape === "gem") stoneFile = "STONE_GEM.glb";
 
-     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-     return {
-       ...baseConfig,
-       bandPath: `${baseUrl}/models/ring/${bandFile}`,
-       headPath: `${baseUrl}/models/ring/${headFile}`,
-       stonePath: `${baseUrl}/models/ring/${stoneFile}`,
-     };
-   };
+    let headFile = "HEAD_4PRONGS.glb";
+    if (baseConfig.headModel === "2prongs") headFile = "HEAD_2PRONGS.glb";
+    if (baseConfig.headModel === "twirl") headFile = "HEAD_TWIRL.glb";
 
-   const baseConfig = answers ? buildPaths(deriveConfigFromSurveyAnswers(answers)) : null;
+    return {
+      ...baseConfig,
+      bandPath: `/models/ring/${bandFile}`,
+      headPath: `/models/ring/${headFile}`,
+      stonePath: `/models/ring/${stoneFile}`,
+    };
+  };
 
-   const concepts = React.useMemo(() => {
-     if (!baseConfig) {
-       return [
-         { id: 1, name: "Concept 1", image: "/images/concept_01.png", modelPath: "/models/concept_01.obj" },
-         { id: 2, name: "Concept 2", image: "/images/concept_02.png", modelPath: "/models/concept_02.obj" },
-         { id: 3, name: "Concept 3", image: "/images/concept_03.png", modelPath: "/models/concept_03.obj" },
-       ];
-     }
+  const baseConfig = answers ? buildPaths(deriveConfigFromSurveyAnswers(answers)) : null;
 
-     // Build three intentionally distinct variants
-     const conceptA = withSurveyDefaults({
-       ...baseConfig,
-       label: "Signature match",
-     });
+  const concepts = React.useMemo(() => {
+    // Use baseConfig if available, otherwise use sensible defaults
+    const defaultConfig = baseConfig || buildPaths(withSurveyDefaults({
+      material: "gold",
+      materialColor: "gold",
+      stoneColor: "clear",
+      polish: 0.8,
+      clarity: 0.8,
+      bandDesign: "Classic",
+      stoneShape: "brilliant",
+      headModel: "4prongs",
+    }));
 
-     const conceptB = withSurveyDefaults({
-       ...baseConfig,
-       design: "delicate",
-       style: "solitaire",
-       bandDesign: "Classic",
-       stoneShape: "brilliant",
-       metalFinish: "polished",
-       headModel: "4prongs",
-       stoneColor: baseConfig.stoneColor === "clear" ? "clear" : baseConfig.stoneColor,
-       polish: Math.max(baseConfig.polish, 0.85),
-       clarity: Math.max(baseConfig.clarity, 0.85),
-       material: baseConfig.material === "silver" ? "platinum" : baseConfig.material,
-       label: "Refined minimal",
-     });
+    // Build three intentionally distinct variants
+    const conceptA = withSurveyDefaults({
+      ...defaultConfig,
+      label: "Signature match",
+    });
 
-     const conceptC = withSurveyDefaults({
-       ...baseConfig,
-       design: "statement",
-       style: "halo",
-       bandDesign: "Flat",
-       stoneShape: "gem",
-       headModel: "twirl",
-       metalFinish: baseConfig.metalFinish === "matte" ? "matte" : "hammered",
-       stoneColor: baseConfig.stoneColor === "clear" ? "red" : baseConfig.stoneColor,
-       material: baseConfig.material === "gold" ? "rose" : baseConfig.material,
-       polish: Math.min(baseConfig.polish, 0.65),
-       clarity: Math.min(baseConfig.clarity, 0.7),
-       label: "Bold spotlight",
-     });
+    const conceptB = withSurveyDefaults({
+      ...defaultConfig,
+      design: "delicate",
+      style: "solitaire",
+      bandDesign: "Classic",
+      stoneShape: "brilliant",
+      metalFinish: "polished",
+      headModel: "4prongs",
+      stoneColor: defaultConfig.stoneColor === "clear" ? "clear" : defaultConfig.stoneColor,
+      polish: Math.max(defaultConfig.polish || 0.8, 0.85),
+      clarity: Math.max(defaultConfig.clarity || 0.8, 0.85),
+      material: defaultConfig.material === "silver" ? "platinum" : defaultConfig.material,
+      materialColor: defaultConfig.material === "silver" ? "platinum" : defaultConfig.materialColor,
+      label: "Refined minimal",
+      thumbnailScale: 2.0,
+    });
 
-     const cA = buildPaths(conceptA);
-     const cB = buildPaths(conceptB);
-     const cC = buildPaths(conceptC);
+    const conceptC = withSurveyDefaults({
+      ...defaultConfig,
+      design: "statement",
+      style: "halo",
+      bandDesign: "Flat",
+      stoneShape: "gem",
+      headModel: "twirl",
+      metalFinish: defaultConfig.metalFinish === "matte" ? "matte" : "hammered",
+      stoneColor: defaultConfig.stoneColor === "clear" ? "red" : defaultConfig.stoneColor,
+      material: defaultConfig.material === "gold" ? "rose" : defaultConfig.material,
+      materialColor: defaultConfig.material === "gold" ? "rose" : defaultConfig.materialColor,
+      polish: Math.min(defaultConfig.polish || 0.8, 0.65),
+      clarity: Math.min(defaultConfig.clarity || 0.8, 0.7),
+      label: "Bold spotlight",
+    });
 
-     return [
-       { id: 1, name: "Concept 1", config: cA, modelPath: cA.bandPath, image: "/images/concept_01.png" },
-       { id: 2, name: "Concept 2", config: cB, modelPath: cB.bandPath, image: "/images/concept_02.png" },
-       { id: 3, name: "Concept 3", config: cC, modelPath: cC.bandPath, image: "/images/concept_03.png" },
-     ];
-    }, [baseConfig]);
+    const cA = buildPaths(conceptA);
+    const cB = buildPaths(conceptB);
+    const cC = buildPaths(conceptC);
 
-  const handleSelect = (concept) => {
+    return [
+      { id: 1, name: "Concept 1", config: cA, modelPath: cA.bandPath },
+      { id: 2, name: "Concept 2", config: cB, modelPath: cB.bandPath },
+      { id: 3, name: "Concept 3", config: cC, modelPath: cC.bandPath },
+    ];
+  }, [baseConfig]);
+
+  const handleSelect = useCallback((concept) => {
     const payload = {
       from: "concepts",
       modelPath: concept.modelPath,
@@ -208,18 +110,63 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
       surveyAnswers: answers,
     };
     navigate("/design", { state: payload });
-  };
+  }, [navigate, answers]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     // If we came here from the survey flow, go back to step 2; otherwise, go to home
     if (from === 'survey') {
       navigate('/survey', { state: { step: 2 } });
     } else {
       navigate('/');
     }
-  };
+  }, [from, navigate]);
 
   const { setLeft, setRight } = useHeader();
+
+  // Use ref to track if thumbnails have been generated
+  const hasGenerated = React.useRef(false);
+
+  // Generate thumbnails when component mounts
+  React.useEffect(() => {
+    // Only generate once
+    if (hasGenerated.current || concepts.length === 0) {
+      return;
+    }
+
+    hasGenerated.current = true;
+
+    const generateThumbnails = async () => {
+      setIsGenerating(true);
+      const startTime = performance.now();
+
+      try {
+        // Generate thumbnails for all concepts
+        const thumbnailData = {};
+        for (const concept of concepts) {
+          const thumbnail = await thumbnailGenerator.generateThumbnail(
+            concept.config.bandPath,
+            concept.config.stonePath,
+            concept.config
+          );
+          thumbnailData[concept.id] = thumbnail;
+        }
+
+        setThumbnails(thumbnailData);
+
+        const endTime = performance.now();
+        console.log(`Thumbnails generated in ${Math.round(endTime - startTime)}ms`);
+      } catch (error) {
+        console.error('Failed to generate thumbnails:', error);
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    generateThumbnails();
+
+    // Note: Don't dispose the generator here as it's a singleton
+    // and might be needed if component remounts
+  }, []);
 
   React.useEffect(() => {
     setLeft(<button className="back-btn btn-back-small" onClick={handleBack}>← Back</button>);
@@ -228,7 +175,7 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
       setLeft(null);
       setRight(null);
     };
-  }, []);
+  }, [setLeft, setRight, handleBack]);
 
   return (
     <div className="concepts-page">
@@ -242,9 +189,20 @@ const ConceptSelectionPage = ({ surveyAnswers }) => {
           {concepts.map((c) => (
             <div key={c.id} className="concept-card" onClick={() => handleSelect(c)}>
               <div className="concept-preview-wrapper">
-                {c.config ? <ConceptPreview concept={c} /> : (
-                  <div className="concept-icon">
-                    <img src={braceletImg} alt={c.name} onError={(e) => (e.currentTarget.src = "/images/bracelet.png")} />
+                {isGenerating ? (
+                  <div className="thumbnail-loading">
+                    <div className="spinner"></div>
+                    <p>Generating preview...</p>
+                  </div>
+                ) : thumbnails[c.id] ? (
+                  <img
+                    src={thumbnails[c.id]}
+                    alt={c.name}
+                    className="concept-thumbnail"
+                  />
+                ) : (
+                  <div className="thumbnail-error">
+                    <p>Preview unavailable</p>
                   </div>
                 )}
               </div>

@@ -458,7 +458,19 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
 
     console.log("Total meshes:", allObjects.length);
 
+    // Aumenta la precisione del raycaster per la Twirl head quando separata
+    const isTwirlHead = config?.headModel === "twirl";
+    const originalLineThreshold = raycastingRef.current.raycaster.params.Line.threshold || 0;
+
+    if (isExploded && isTwirlHead) {
+      // Aumenta il threshold di raycasting per facilitare il click sulla Twirl head
+      raycastingRef.current.raycaster.params.Line.threshold = 0.02;
+    }
+
     const intersects = raycastingRef.current.raycaster.intersectObjects(allObjects);
+
+    // Ripristina il threshold originale
+    raycastingRef.current.raycaster.params.Line.threshold = originalLineThreshold;
 
     console.log("Intersects:", intersects.length);
 
@@ -466,19 +478,25 @@ const ThreeCanvas = ({ config = {}, isLoading = false, onUndo, onRedo, canUndo =
       const clickedObject = intersects[0].object;
       const objectName = clickedObject.name.toLowerCase();
 
-      console.log("Clicked object:", clickedObject.name);
+      console.log("Clicked object:", clickedObject.name, "Full name:", objectName);
 
       let partName = null;
       // Riconosci i nomi dei mesh
       if (objectName.includes("band") || objectName.includes("classic") || objectName.includes("knife") || objectName.includes("flat")) {
         partName = "band";
-      } else if (objectName.includes("head") || objectName.includes("prong")) {
+      } else if (objectName.includes("head") || objectName.includes("prong") || objectName.includes("twirl")) {
+        // Aggiungi "twirl" per catturare le twirl head
         partName = "head";
       } else if (objectName.includes("stone") || objectName.includes("gem") || objectName.includes("brilliant") || objectName.includes("diamond")) {
         partName = "stone";
+      } else if (isExploded && config?.headModel === "twirl") {
+        // Se è la Twirl head e il gioiello è separato, riconosci gli oggetti generici come head
+        // (Twirl head usa nomi generici come Cylinder004)
+        partName = "head";
+        console.log("Recognized as Twirl head (generic name)");
       }
 
-      console.log("Part name:", partName);
+      console.log("Part name:", partName, "isExploded:", isExploded);
 
       // Single click: open ring and allow modification
       if (!isExploded) {

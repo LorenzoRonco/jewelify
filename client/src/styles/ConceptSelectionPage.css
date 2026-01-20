@@ -1,5 +1,5 @@
 .concepts-page {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen;
   padding: 28px;
   color: #333;
 }
@@ -49,7 +49,9 @@
   border-radius: 8px;
   text-align: center;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.09);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -97,4 +99,102 @@
     min-height: auto;
     padding: 1.5rem;
   }
+}
+
+/* 3D Preview container */
+.concept-preview-wrapper {
+  width: 100%;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Thumbnail image */
+.concept-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Loading state */
+.thumbnail-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.thumbnail-loading p {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #333;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error state */
+.thumbnail-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnail-error p {
+  font-size: 0.9rem;
+  color: #999;
+  margin: 0;
+}
+
+.concept-preview {
+  width: 100%;
+  height: 220px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
+}
+
+.concept-preview canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.concept-preview.placeholder-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.concept-preview.placeholder-img img {
+  max-width: 80%;
+  max-height: 80%;
+  object-fit: contain;
+}
+
+.concept-subtitle {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.25rem;
+  font-weight: 400;
 }
