@@ -50,9 +50,9 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
     // Stone shapes (removed overlapping keywords with band designs)
     const shapes = {
-      brilliant: ['round', 'brilliant', 'sparkly', 'circular'],
-      diamond: ['square', 'cushion', 'asscher', 'angular'],
-      gem: ['oval', 'emerald cut', 'elongated', 'pear', 'teardrop']
+      brilliant: ['round', 'brilliant', 'brillant', 'sparkly', 'circular'],
+      diamond: ['square', 'cushion', 'asscher', 'angular', 'diamond'],
+      gem: ['oval', 'emerald cut', 'elongated', 'pear', 'teardrop', 'gem']
     };
 
     for (const [shape, keywords] of Object.entries(shapes)) {
@@ -406,6 +406,18 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
       if (updateDelayRef.current) clearTimeout(updateDelayRef.current);
     };
   }, []);
+
+  // Lock body scroll when modal is open
+  React.useEffect(() => {
+    if (selectedPart || showRecalculateModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedPart, showRecalculateModal]);
 
   // Recalculate: randomize all config parameters
   const handleRecalculate = () => {
@@ -832,6 +844,27 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   };
 
   // Ottieni informazioni per il modale in base alla parte selezionata
+  const getPartPlaceholder = (partName) => {
+    const placeholders = {
+      stone: `Describe your ideal stone...
+
+Try: round, oval, pear, cushion (shape)
+clear, pink, blue, green, red (color)
+high clarity, flawless, vintage (quality)`,
+      head: `Describe your ideal head style...
+
+Try: 4-prong, 2-prong, twirl/spiral (style)
+gold, silver, rose gold (metal)
+polished, matte, hammered (finish)`,
+      band: `Describe your ideal band...
+
+Try: classic, knife edge, flat/wide (design)
+gold, silver, rose gold (metal)
+polished, matte, hammered (finish)`
+    };
+    return placeholders[partName] || "Describe your customization...";
+  };
+
   const getPartInfo = (partName) => {
     const partInfo = {
       stone: {
@@ -973,7 +1006,7 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
             <h3>Live quote:</h3>
             <p className="live-price">€{estimatedPrice}</p>
-            <button className="btn-more-details" onClick={() => setShowPriceDetails(true)}>... more details</button>
+            <button className="btn-more-details" onClick={() => setShowPriceDetails(true)}>Price Details</button>
           </div>
 
           {/* Clickable Ring Parts */}
@@ -1110,13 +1143,12 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
 
               <div className="ai-prompt-section">
                 <h3>Customize with AI</h3>
-                <p className="ai-prompt-hint">Describe how you'd like to modify this {selectedPart}</p>
                 <textarea
                   className="ai-prompt-input"
-                  placeholder={`e.g., "Make the ${selectedPart} more elegant and vintage-inspired"`}
+                  placeholder={getPartPlaceholder(selectedPart)}
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
-                  rows={4}
+                  rows={5}
                 />
               </div>
 
