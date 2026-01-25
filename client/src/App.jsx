@@ -1,5 +1,5 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router";
 import Home from "./Home.jsx";
 import { HeaderProvider } from "./components/HeaderContext";
@@ -11,9 +11,27 @@ import ConceptSelectionPage from "./components/ConceptSelectionPage.jsx";
 import InspirationPage from "./components/InspirationPage.jsx";
 import "./App.css"
 
+const STORAGE_KEY_SURVEY = 'jewelify_survey_answers';
+
 function App() {
-  const [surveyAnswers, setSurveyAnswers] = useState(null);
+  // Load survey answers from localStorage on mount
+  const [surveyAnswers, setSurveyAnswers] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SURVEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch (error) {
+      console.error('Error loading survey from localStorage:', error);
+      return null;
+    }
+  });
   const navigate = useNavigate();
+
+  // Save survey answers to localStorage whenever they change
+  useEffect(() => {
+    if (surveyAnswers) {
+      localStorage.setItem(STORAGE_KEY_SURVEY, JSON.stringify(surveyAnswers));
+    }
+  }, [surveyAnswers]);
 
   const handleSurveyComplete = (answers) => {
     setSurveyAnswers(answers);
@@ -22,6 +40,10 @@ function App() {
 
   const handleExitDesign = () => {
     setSurveyAnswers(null);
+    // Clear all saved progress
+    localStorage.removeItem(STORAGE_KEY_SURVEY);
+    localStorage.removeItem('jewelify_design_config');
+    localStorage.removeItem('jewelify_design_history');
     navigate('/');
   };
 

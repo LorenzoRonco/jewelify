@@ -16,6 +16,11 @@ const ClickableTitle = ({ className }) => {
 
   const confirmYes = () => {
     setShowConfirm(false);
+    // Clear all saved progress when returning home
+    localStorage.removeItem('jewelify_survey_answers');
+    localStorage.removeItem('jewelify_survey_progress');
+    localStorage.removeItem('jewelify_design_config');
+    localStorage.removeItem('jewelify_design_history');
     navigate('/');
   };
 

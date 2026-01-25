@@ -8,12 +8,28 @@ import braceletImg from "../../images/bracelet.png";
 import necklaceImg from "../../images/necklace.png";
 import earringsImg from "../../images/earrings.png";
 
+const STORAGE_KEY_SURVEY_PROGRESS = 'jewelify_survey_progress';
+
 const SetupSurvey = ({ onComplete }) => {
   const location = useLocation();
-  const [step, setStep] = useState(1);
-  const [answers, setAnswers] = useState({
-    category: null,
-    survey: {},
+  
+  // Load survey progress from localStorage on mount
+  const [step, setStep] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SURVEY_PROGRESS);
+      return saved ? JSON.parse(saved).step : 1;
+    } catch (error) {
+      return 1;
+    }
+  });
+  
+  const [answers, setAnswers] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SURVEY_PROGRESS);
+      return saved ? JSON.parse(saved).answers : { category: null, survey: {} };
+    } catch (error) {
+      return { category: null, survey: {} };
+    }
   });
 
   const categoryOptions = [
@@ -148,6 +164,11 @@ const SetupSurvey = ({ onComplete }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Save survey progress to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_SURVEY_PROGRESS, JSON.stringify({ step, answers }));
+  }, [step, answers]);
 
   // Set initial step based on navigation state (ex: coming back from concepts)
   useEffect(() => {

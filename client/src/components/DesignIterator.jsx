@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useLocation } from "react-router";
 import ThreeCanvas from "./ThreeCanvas";
@@ -192,9 +192,29 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
     initialConfig = buildPaths(fallbackConfig);
   }
 
-  const [config, setConfig] = useState(initialConfig);
+  // Load config and history from localStorage if available
+  const loadedState = React.useMemo(() => {
+    try {
+      const savedConfig = localStorage.getItem('jewelify_design_config');
+      const savedHistory = localStorage.getItem('jewelify_design_history');
+      
+      if (savedConfig && savedHistory) {
+        return {
+          config: JSON.parse(savedConfig),
+          historyState: JSON.parse(savedHistory)
+        };
+      }
+    } catch (error) {
+      console.error('Error loading design from localStorage:', error);
+    }
+    return null;
+  }, []);
 
-  const [historyState, setHistoryState] = useState({ history: [initialConfig], historyIndex: 0 });
+  const [config, setConfig] = useState(loadedState?.config || initialConfig);
+
+  const [historyState, setHistoryState] = useState(
+    loadedState?.historyState || { history: [initialConfig], historyIndex: 0 }
+  );
   const { history, historyIndex } = historyState;
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
@@ -209,6 +229,15 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   const [showRecalculateModal, setShowRecalculateModal] = useState(false); // Per il modale di recalculate
   const TOAST_DURATION = 10000; // Toast display duration in ms (10s)
   const popupTimerRef = useRef(null);
+
+  // Save config and history to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('jewelify_design_config', JSON.stringify(config));
+  }, [config]);
+
+  useEffect(() => {
+    localStorage.setItem('jewelify_design_history', JSON.stringify(historyState));
+  }, [historyState]);
   const updateDelayRef = useRef(null);
 
   const runAfterPopup = useCallback((message, action) => {
@@ -563,6 +592,12 @@ const DesignIterator = ({ surveyAnswers, onExit }) => {
   // Execute purchase
   const handleExecutePurchase = () => {
     setShowConfirmModal(false);
+
+    // Clear all saved progress
+    localStorage.removeItem('jewelify_survey_answers');
+    localStorage.removeItem('jewelify_survey_progress');
+    localStorage.removeItem('jewelify_design_config');
+    localStorage.removeItem('jewelify_design_history');
 
     // Show a friendly success toast and delay exit so user sees it
     const successMessage = "Order confirmed! Your jewel has been sent to the jeweler";
